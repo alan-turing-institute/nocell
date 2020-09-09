@@ -4,32 +4,9 @@ A language for spreadsheets
 
 ## Design
 
-See the wiki for plan and design.
+[See the wiki for plan and design](https://github.com/alan-turing-institute/nocell/wiki)
 
 ## How we work together
-
-### Documentation
-
-**Please think about and edit this section**
-
-In the new world of remote-working, it seems likely that documentation will be
-more valuable. I (James G) intend to try to write more "planning-type"
-documentation -- ie, design principles, architecture, and so on -- rather than
-just diving into code. I propose to try to make this documentation precise but
-pithy.
-
-There's some trade-off here that I don't really know how to manage. Typically
-one needs to try out ideas in code, and those ideas will change. Thus, if one
-writes docmentation too early, there's an inevitable workload of rewrites. But
-on the other hand, writing things in advance is a way to help one think, which
-is important since we don't meet up in person with a whiteboard any more. And if
-one writes code too early, the design tends to ossify. 
-
-I think perhaps the implication is that one needs to be slightly less ambitious
-(end-to-end) and more about building stuff that does a small thing, but
-works. That fits quite well with this project since the end-to-end prototype has
-already been worked out.
-
 
 ### Branches
 
@@ -43,4 +20,25 @@ already been worked out.
 * Explcitly provide rather than `all-defined-out`
 * Use `contract-out` on provides
 * No owners, but let people know what you are working on (eg, Slack or grab an issue)
+
+### Documentation
+
+**Please think about and edit this section**
+
+In the new world of remote-working, it seems likely that documentation will be
+more valuable. I (James G) intend to try to write more "planning-type"
+documentation -- ie, design principles, architecture, and so on -- rather than
+just diving into code. I propose to try to make this documentation precise but
+pithy.
+
+There's some trade-off here that I don't really know how to manage. Typically
+one needs to try out ideas in code, and those ideas will change. But on the
+other hand, writing things in advance is a way to help one think, which is
+important since we don't meet up in person with a whiteboard any more. And if
+one writes code too early, the design tends to ossify.
+
+I think perhaps the implication is that one needs to be slightly less ambitious
+(end-to-end) and more about building stuff that does a small thing, but
+works. That fits quite well with this project since the end-to-end prototype has
+already been worked out.
 
