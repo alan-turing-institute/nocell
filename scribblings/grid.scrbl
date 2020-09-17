@@ -4,7 +4,10 @@
 @require[scribble/core
          scribble/decode]
 
-@title{The Grid language}
+@title{The Grid Language (work in progress)}
+@author{James Geddes}
+
+@centered{@bold{The following material is work in progress}}
 
 Grid is a language for describing spreadsheets, although to call it a ``language''
 is perhaps overblown. It is @emph{declarative}, in the sense that it merely
@@ -26,6 +29,7 @@ a semi-formal description.
                                                (decode-content fields))))
                             (list (make-element 'roman ")")))))
 
+@; --- pseq makes a parenthesised sequence. 
 @(define (BNF-pseq . fields)
    (make-element #f (append (list (make-element 'roman "("))
                             (list (apply BNF-seq (decode-content fields)))
@@ -36,22 +40,77 @@ a semi-formal description.
                     @kleeneplus[@nonterm{sheet}]])
      (list @nonterm{sheet}
            @BNF-seq[@nonterm{sheet-meta}
+                    @optional[@nonterm{row-styles}]
+                    @optional[@nonterm{column-styles}]
                     @kleeneplus[@nonterm{row}]])
      (list @nonterm{row}
            @kleeneplus[@nonterm{cell}])
      (list @nonterm{cell}
-           @nonterm{value} @nonterm{formula})
-     (list @nonterm{formula}
+           @BNF-seq[@nonterm{cell-contents} @optional[@nonterm{cell-style}]])
+     (list @nonterm{cell-contents}
+           @nonterm{atomic-value} @nonterm{expression} @litchar{nothing})
+     (list @nonterm{expression}
            @nonterm{value}
            @nonterm{reference}
-           @BNF-pseq[@nonterm{built-in} @kleeneplus[@nonterm{formula}]])
-     (list @nonterm{value} @BNF-alt[@nonterm{number}
-                                    @nonterm{string}
-                                    @nonterm{boolean}
-                                    @litchar{nothing}])]
+           @nonterm{application})
+     (list @nonterm{application}
+           @BNF-seq[@nonterm{built-in} @kleeneplus[@nonterm{expression}]])
+     (list @nonterm{value}
+           @nonterm{atomic-value}
+           @nonterm{array-value})
+     (list @nonterm{atomic-value} @BNF-alt[@nonterm{number}
+                                           @nonterm{string}
+                                           @nonterm{boolean}])]
 
 @section{Structure}
 
-A grid program is a list of @nonterm{sheet}, together with some metadata. 
+A spreadsheet is a list of `worksheets,' each of which is a two-dimensional array
+of cells. In Grid, we represent a worksheet by a list of rows, each of which is
+a list of cells.
+
+Spreadsheets carry some metadata along with them: author, date, and so on. We
+haven't figured this out yet.
+
+
+@section{Values and Expressions}
+
+In most spreadsheet programs, the content of a cell may be either the literal
+form of a value (specifically, a number, string, boolean, or error) or a
+`formula.'  Formulas are distinguished by starting with `@tt{=}.' To evaluate
+the spreadsheet means to evaluate each formula; typically, each formula
+evaluates to an atomic value. However, the arguments to some built-in functions
+(for example, @tt{SUM}) may also be an @emph{array}---a one- or two-dimensional
+collection of atomic values. @margin-note{Indeed, at least in Excel, the value
+of a formula may also be an array. However, the behaviour here is both
+unclear and has changed. Previously, a cell whose contents evaluated to an array
+would appear to contain just the top-left element of the array. In more recent
+versions the elements of the array `spill' out of the cell into adjacent
+cells. At any rate, I don't think there's any way to get at any element of the
+array, other than the top-left element, from a formula in a different cell. The
+cell with the array always behaves as if it contains a single value.}
+
+
+
+Cells can contain atomic values (numbers, strings, or booleans) or be `empty.'
+They can also contain formulas. A formula is an expression involving atomic
+values, built-in functions (which take atomic values as arguments -- oh no, I
+need arrays...) 
+
+
+@section{References}
+
+
+@section{Styles}
+
+Worksheets and cells carry style information (which, again, we haven't yet
+figured out). The style information for worksheets refers to columns and rows
+(for example, to say that certain columns or rows should be the same size, or
+are `filler' columns or rows).
+
+The style information for cells will be descriptive rather than
+presentational. That is, it will not specify colours, or fonts, or other visual
+effects; instead it will specify the kind of cell. For example, some cells are
+`summaries' of the cells above them, in which case the system might choose to
+insert a horizontal rule.
 
 
