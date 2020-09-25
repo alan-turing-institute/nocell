@@ -1,0 +1,33 @@
+name: Build scribble docs
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'scribblings/**'
+
+jobs:
+  build-doc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2.3.1
+        with:
+          persist-credentials: false
+
+      - name: Build scribble
+        uses: Bogdanp/setup-racket@v0.10
+        with:
+          distribution: 'full'
+          variant: 'regular'
+          version: '7.8'
+
+      - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/grid.scrbl
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@3.6.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: doc/grid
+          CLEAN: true
