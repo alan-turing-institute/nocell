@@ -2,7 +2,7 @@ name: Build scribble docs
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'scribblings/**'
 
