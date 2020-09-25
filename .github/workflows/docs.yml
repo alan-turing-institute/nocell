@@ -10,13 +10,13 @@ jobs:
           persist-credentials: false
 
       - name: Build scribble
-        - uses: actions/checkout@master
-        - uses: Bogdanp/setup-racket@v0.10
-          with:
-            distribution: 'full'
-            variant: 'regular'
-            version: '7.8'
-        - run: raco scribble --htmls --dest doc --redirect-main http://docs.racket-lang.org +m scribblings/grid.scrbl
+        uses: Bogdanp/setup-racket@v0.10
+        with:
+          distribution: 'full'
+          variant: 'regular'
+          version: '7.8'
+
+      - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/grid.scrbl
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@3.6.1
