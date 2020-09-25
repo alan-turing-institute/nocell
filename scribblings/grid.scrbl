@@ -174,4 +174,4 @@ effects; instead it will specify the kind of cell. For example, some cells are
 `summaries' of the cells above them, in which case the system might choose to
 insert a horizontal rule.
 
- 
+
