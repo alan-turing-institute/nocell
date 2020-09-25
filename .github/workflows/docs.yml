@@ -1,5 +1,11 @@
 name: Build scribble docs
-on: [push]
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'scribblings/**'
+
 jobs:
   build-doc:
     runs-on: ubuntu-latest
