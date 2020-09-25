@@ -5,7 +5,7 @@
          scribble/decode]
 
 @title{The Grid Language (work in progress)}
-@author{James Geddes}
+@author["James Geddes" "Oliver Strickson" "Callum Mole"]
 
 @centered{@bold{The following material is work in progress}}
 
