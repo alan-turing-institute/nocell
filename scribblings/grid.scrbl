@@ -78,9 +78,17 @@ a data structure by replacing the non-terminals with structures.
      (list @nonterm{array-value}
            @BNF-etc)
      (list @nonterm{reference}
-           @BNF-etc)
+           @nonterm{single-cell-reference}
+           @BNF-seq[@nonterm{single-cell-reference} @nonterm{single-cell-reference}])
+     (list @nonterm{single-cell-reference}
+           @nonterm{label}
+           @BNF-seq[@nonterm{label} @nonterm{label}])
      (list @nonterm{error}  
-           @BNF-etc)]
+           @BNF-alt[@litchar{error:arg} @litchar{error:undef} @litchar{error:val}])
+     (list @nonterm{built-in}
+           @BNF-alt[@nonterm{unary-built-in} @nonterm{binary-built-in} @nonterm{ternary-built-in} @nonterm{range-built-in}])
+           
+]
 
 @section{Structure}
 
@@ -144,14 +152,14 @@ spilled value whereas, previously, that cell would have been treated as empty.}
 
 @subsection{References}
 
-A @deftech{range} of cells is a rectangular set of contiguous cells or a single
-cell. @margin-note{@bold{Excel}: In Excel, a range is allowed to be the union of
-rectangular ranges.}
+A @deftech{range} of cells is a rectangular set of contiguous cells (possibly
+just a single cell). @margin-note{@bold{Excel}: In Excel, a range is allowed to
+be the union of rectangular ranges.}
 
 A @deftech{reference} is a value that denotes a range. A @deftech{label} is a
 unique identifier associated with a cell (unique over all cells). Grid uses
-labels as references to single cells, and two labels for references to ranges of
-cells.
+labels to refer to single cells; it uses two labels to refer to a range of
+cells: the two labels are the top-left abd bottom-right cell respectively.
 
 A @deftech{named range} is a symbol which stands for a range. For now, Grid does
 not support named ranges.
