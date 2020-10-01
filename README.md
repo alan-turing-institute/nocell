@@ -4,7 +4,8 @@ A language for spreadsheets
 
 ## Design
 
-[See the wiki for plan and design](https://github.com/alan-turing-institute/nocell/wiki)
+- [See the wiki for plan and design](https://github.com/alan-turing-institute/nocell/wiki)
+- [The documentation lives here](https://alan-turing-institute.github.io/nocell/index.html)
 
 ## How we work together
 
