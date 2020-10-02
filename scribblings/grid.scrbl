@@ -50,10 +50,7 @@ a data structure by replacing the non-terminals with structures.
      (list @nonterm{row}
            @kleeneplus[@nonterm{cell}])
      (list @nonterm{cell}
-           @BNF-seq[@nonterm{cell-content} @optional[@nonterm{cell-style}] @optional[@nonterm{label}]])
-     (list @nonterm{cell-content}
-           @litchar{empty}
-           @nonterm{expression})
+           @BNF-seq[@nonterm{expression} @optional[@nonterm{cell-style}] @optional[@nonterm{label}]])
      (list @nonterm{expression}
            @nonterm{value}
            @nonterm{application})
@@ -64,9 +61,10 @@ a data structure by replacing the non-terminals with structures.
      (list @nonterm{atomic-value} @BNF-alt[@litchar{numeric?}
                                            @litchar{string?}
                                            @litchar{boolean?}
-                                           @nonterm{error}])
+                                           @nonterm{error}
+                                           @litchar{nothing}])
      (list @nonterm{application}
-           @BNF-seq[@nonterm{builtin} @kleeneplus[@nonterm{expression}]])
+           @BNF-seq[@nonterm{builtin} @kleenestar[@nonterm{expression}]])
      (list @nonterm{label} @litchar{string?})                           
      (list @nonterm{grid-meta}
            @BNF-etc)
@@ -91,13 +89,13 @@ a data structure by replacing the non-terminals with structures.
      (list @nonterm{error}  
            @BNF-alt[@litchar{error:arg} @litchar{error:undef} @litchar{error:val}])
      (list @nonterm{builtin}
-           @BNF-alt[@nonterm{builtin/0} @nonterm{builtin/1} @nonterm{builtin/2} @nonterm{builtin/3} @nonterm{builtin/*}])
+           @BNF-alt[@nonterm{builtin/0} @nonterm{builtin/1} @nonterm{builtin/2} @nonterm{builtin/3}]
+           @nonterm{builtin/*})
      (list @nonterm{builtin/0}
            @BNF-litalt["pi" "e"])
      (list @nonterm{builtin/1}
-           @BNF-litalt["neg" "abs" "sign"]
+           @BNF-litalt["neg" "abs" "sgn"]
            @litchar{inv}
-           @BNF-litalt["abs" "sign"]
            @BNF-litalt["round" "floor" "ceiling" "truncate"]
            @BNF-litalt["exp" "ln" "log10"]
            @litchar{not})
@@ -139,8 +137,12 @@ below); or the @tech{application} of a built-in function to a set of
 arguments. When a Grid program is translated to a spreadsheet the expression is
 converted to a value or a formula as appropriate.
 
-An @deftech{atomic value} is a number, a string, a boolean, or an error. (It may
-be worthwhile thinking about adding other types -- for example, dates.)
+An @deftech{atomic value} is a number, a string, a boolean, an error, or
+`nothing.' (It may be worthwhile thinking about adding other types -- for
+example, dates.) The special value `nothing' represents an empty cell. Any cells
+which exist in the final spreadsheet but which were not specified in the Grid
+programme (for example, cells to the right of or below those specified)
+implicitly contain the value `nothing.'
 
 A @deftech{non--atomic value} is either a matrix value or a reference. A
 @deftech{matrix value} is a two-dimensional matrix of @tech{atomic values}. A
