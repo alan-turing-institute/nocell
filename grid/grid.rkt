@@ -9,7 +9,7 @@ This module exports structure definitions which define a Grid programme
 |#
 
 (provide
- (struct-out programme)
+ (struct-out program)
  (struct-out sheet)
  (struct-out cell)
  (struct-out labelled-cell)
@@ -27,7 +27,7 @@ This module exports structure definitions which define a Grid programme
  error?)
 
 ;; sheets : list-of sheet?
-(struct programme (sheets) #:transparent)
+(struct program (sheets) #:transparent)
 
 ;; rows : list-of list-of cell?
 (struct sheet (rows) #:transparent)
