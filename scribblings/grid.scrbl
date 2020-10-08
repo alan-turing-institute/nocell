@@ -3,22 +3,26 @@
 @require[scribble/bnf]
 @require[scribble/core
          scribble/decode]
+@require[
+  @for-label[racket/base]
+  @for-label["../grid/grid.rkt"]]
 
-@title{The Grid Language (work in progress)}
+@title{The Grid Language}
 @author["James Geddes" "Oliver Strickson" "Callum Mole"]
 
-@centered{@bold{The following material is work in progress}}
+@section{Structure}
+@defmodule["../grid/grid.rkt"]{The @racketmodname[grid/grid.rkt] library
+defines the Grid language.}
 
-Grid is a language for describing spreadsheets, although to call it a ``language''
-is perhaps overblown. It is @emph{declarative}, in the sense that it merely
-describes the structure and content of a spreadsheet. A grid program may be
-straightforwardly converted into a specific spreadsheet application, such as the
-Open Document Format for Office Applications (ODF).
+Grid is a language for describing spreadsheets, although to call it a
+``language'' is perhaps overblown. It is perhaps best thought of as ``assembly
+language''for spreadsheets. A Grid program may be straightforwardly converted
+into a specific spreadsheet application, such as the Open Document Format for
+Office Applications (ODF).
 
-The following is the definition of the `abstract syntax tree' of Grid. It is not
-an external representation nor a data structure to be used as an internal
-representation. However, it would be reasonably straightforward to convert it to
-a data structure by replacing the non-terminals with structures.
+The following is a conceptual definition of the structure of a Grid
+program. Certain non-terminals are still undefined; these have an ellipsis in
+place of a definition and are omittied in the structure definitions.
 
 @(define (term name)
    (make-element 'bold name))
@@ -39,7 +43,7 @@ a data structure by replacing the non-terminals with structures.
 @(define (BNF-litalt . fields)
    (apply BNF-alt (map litchar (decode-content fields))))
 
-@BNF[(list @nonterm{grid-program}
+@BNF[(list @nonterm{program}
            @BNF-seq[@nonterm{grid-meta}
                     @kleeneplus[@nonterm{sheet}]])
      (list @nonterm{sheet}
@@ -112,20 +116,40 @@ a data structure by replacing the non-terminals with structures.
            
 ]
 
-@section{Structure}
+@subsection{Sheets and Cells}
 
-@subsection{Sheets}
+@deftogether[(@defstruct*[program ([sheets (listof sheet?)]) #:transparent]
+              @defstruct*[sheet ([rows (listof (listof cell?))]) #:transparent]
+              @defstruct*[cell ([xpr expression?]) #:transparent]
+              @defstruct*[(labelled-cell cell) ([lbl string?]) #:transparent])]{
 
-A `spreadsheet,' such as an Excel spreadsheet, is a list of worksheets, each of
-which is a two-dimensional array of cells. In Grid, a worksheet, or
-@nonterm{sheet}, is represented as a list of rows, each of which is a list of
-cells. (This is the same structure as the XML application underlying ODF.)
+    A `spreadsheet,' such as an Excel document, is a list of worksheets, each of
+    which is a two-dimensional array of cells. In Grid, a worksheet is called a
+    @racket[sheet] and is represented as a list of rows, each of which is a list
+    of cells. A labelled cell is just like a cell, except that it carries a
+    label.}
+
+Note: The `list of list of cell' structure is the same as the structure of the
+XML description of a spreadsheet in ODF.
 
 Spreadsheets carry some metadata along with them: author, date, and so on. We
 haven't figured this out yet.
 
+@subsection{Expressions and Values}
 
-@subsection{Values and Expressions}
+@deftogether[(@defproc[(expression? [v any/c]) boolean?]
+              @defproc[(value? [v any/c]) boolean?]
+              @defproc[(atomic-value? [v any/c]) boolean?]
+              @defproc[(error? [v any/c]) boolean?]
+              @defstruct*[application ([fn builtin?] [args (listof expression?)])
+                                      #:transparent]
+              @defstruct*[matrix ([rows (vectorof (vectorof atomic-value?))])
+                                      #:transparent])]{
+
+   Types that represent things that can be the content of a cell. An
+   @racket[expression] is the most general content of a cell and includes both
+   values and applications of built-in functions. Atomic values are the `final'
+   result of evaluation; intermediate values include two-dimensionals matrices.}
 
 In most spreadsheet programs, such as Excel, the content of a cell may be either
 the literal form of a value or a formula representing a computation. Formulas
@@ -139,10 +163,10 @@ converted to a value or a formula as appropriate.
 
 An @deftech{atomic value} is a number, a string, a boolean, an error, or
 `nothing.' (It may be worthwhile thinking about adding other types -- for
-example, dates.) The special value `nothing' represents an empty cell. Any cells
+example, dates.) The special value @racket['nothing] represents an empty cell. Any cells
 which exist in the final spreadsheet but which were not specified in the Grid
 programme (for example, cells to the right of or below those specified)
-implicitly contain the value `nothing.'
+implicitly contain the value @racket['nothing].
 
 A @deftech{non--atomic value} is either a matrix or a reference. A
 @deftech{matrix} is a two-dimensional matrix of @tech{atomic values}. A
@@ -150,46 +174,58 @@ A @deftech{non--atomic value} is either a matrix or a reference. A
 matrices and references can be generated by, and consumed by, certain built-in
 functions, as well as having literal forms.
 
-@margin-note{@bold{Excel}: In Excel, one can write @tech{matrices} and
-@tech{references} as literals in formulas. For example, @tt{={1, 2, 3; 3, 4 5}}
-is a matrix of two rows by three columns and the function @tt{SUM()} will take a
-matrix as an argument. The formula @tt{=OFFSET(A1, 0, 0)} includes the literal
-reference @tt{A1} and the function @tt{OFFSET()} itself produces a reference as
-its value.}
+We also allow `errors' as atomic values. At the moment we have three kinds of
+error: one to indicate that an argument to a built-in function was the wrong
+type; one to indicate that the function could not be evaluated on the argument
+(eg, division by zero); and one to indicate a `missing' value.
+
+@margin-note{@bold{TODO}: This description of errors is not very precise anout
+what the errors mean; presumably it will be more precise once we start thinking
+about built-in functions.}
+
+@margin-note{In Excel, one can write @tech{matrices} and @tech{references} as
+literals in formulas. For example, @tt{={1, 2, 3; 3, 4 5}} is a matrix of two
+rows by three columns and the function @tt{SUM()} will take a matrix as an
+argument. The formula @tt{=OFFSET(A1, 0, 0)} includes the literal reference
+@tt{A1} and the function @tt{OFFSET()} itself produces a reference as its
+value.}
 
 An @deftech{application} represents the application of a built-in function to
 arguments.
 
-To evaluate an expression means to reduce it to a value (atomic or
-non-atomic). Since errors are values and there are no unbounded loops in Grid
-(at least, we assume that ``circular references'' are forbidden), the evaluation
-of an expression always terminates. To evaluate a @emph{cell} means to reduce
-any value to an atomic value. The atomic value of an array value is its top-left
-element, and the atomic value of a reference is the referent.
+To @deftech{evaluate} an expression means to reduce it to an atomic value. Since
+errors are atomic values and there are no unbounded loops in Grid (at least, we
+assume that ``circular references'' are forbidden), the evaluation of an
+expression always terminates. The atomic value of a matrix is its top-left
+element, and the value of a reference is the referent.
 
-@margin-note{@bold{Excel}: The behaviour of Excel when the result of a formula
-is an array value has changed in recent versions. Previously, a cell whose
-contents evaluated to an array would appear to contain just the top-left element
-of the array. The new behaviour is that the elements of the array `spill out' of
-the cell into adjacent cells; if these cells are not empty then a @tt{#SPILL!}
+@margin-note{The behaviour of Excel when the result of a formula is an array
+value has changed in recent versions. Previously, a cell whose contents
+evaluated to an array would appear to contain just the top-left element of the
+array. The new behaviour is that the elements of the array `spill out' of the
+cell into adjacent cells; if these cells are not empty then a @tt{#SPILL!}
 error is reported in the cell. This change is not merely a presentational
 change: a reference to a cell into which a value was spilled will now give the
 spilled value whereas, previously, that cell would have been treated as empty.}
 
 @subsection{References}
 
-A @deftech{range} of cells is a rectangular set of contiguous cells (possibly
-just a single cell). @margin-note{@bold{Excel}: In Excel, a range is allowed to
-be the union of rectangular ranges.}
+A @deftech{location} identifies a cell. Grid has two methods of picking out a
+particular cell: either by referring to a labelled cell directly, by means of
+its label (known as an @deftech{absolute location}); or by referring to a cell
+indirectly, as an offset from the current cell (known as a @deftech{relative
+location}). To refer indirectly to a cell requires two labels; the offset
+applied to the current cell is the offset between the two labelled cells.
 
-A @deftech{reference} is a value that denotes a range. A @deftech{label} is a
-unique identifier associated with a cell (unique over all cells). Grid uses
-labels to refer to single cells; it uses two labels to refer to a range of
-cells: the two labels are the top-left abd bottom-right cell respectively.
+A @deftech{reference} is a @tech{value} that denotes a single cell or a
+rectangular range of cells. To denote a single cell requires a single location;
+to denote a range reuqires two locations: the top-left and bottom-right cells.
 
-A @deftech{named range} is a symbol which stands for a range. For now, Grid does
-not support named ranges.
+@margin-note{A @emph{named range} is a symbol which stands for a range. For now,
+Grid does not support named ranges.}
 
+
+@section{Built-in Functions}
 
 
 

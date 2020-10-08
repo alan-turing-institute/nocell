@@ -1,5 +1,8 @@
 #lang racket/base
 
+(require racket/contract)
+(require "builtins.rkt")
+
 #| 
 
 Grid is "assembly language for spreadsheets". 
@@ -9,64 +12,80 @@ This module exports structure definitions which define a Grid programme
 |#
 
 (provide
- (struct-out program)
- (struct-out sheet)
- (struct-out cell)
- (struct-out labelled-cell)
+ ;; Predicates for simple types that are not structs
  label?
  expression?
- (struct-out application)
- (struct-out reference)
- (struct-out cell-reference)
- (struct-out range-reference)
- (struct-out location)
- (struct-out absolute-location)
- (struct-out relative-location)
- (struct-out matrix)
+ value?
  atomic-value?
  error?)
 
-;; sheets : list-of sheet?
+
+;; --- Programs, sheets, and cells
+
 (struct program (sheets) #:transparent)
-
-;; rows : list-of list-of cell?
 (struct sheet (rows) #:transparent)
-
-;; xpr : expression?
-;; lbl : (or/c string? #f)
 (struct cell (xpr) #:transparent)
-(struct labelled-cell cell
-  (lbl)
-  #:transparent)
+(struct labelled-cell cell (lbl) #:transparent)
+
+(provide
+ (contract-out
+  (struct program
+    ([sheets (listof sheet?)]))
+  (struct sheet
+    ([rows (listof (listof cell?))]))
+  (struct cell
+    ([xpr expression?]))
+  (struct labelled-cell
+    ([xpr expression?]
+     [lbl string?]))))
 
 (define label? string?)
 
-(define (expression? v)
-  (or
-   (value? v)
-   (application? v)))
 
-;; fn : symbol?
-;; args : list-of expression?
+;; -- Expressions and values
+
 (struct application (fn args) #:transparent)
+(struct matrix (rows) #:transparent)
+
+(provide
+ (contract-out
+  (struct application
+    ([fn   builtin?]
+     [args (listof expression?)]))
+  (struct matrix
+    ([rows (vectorof (vectorof atomic-value? #:flat #t) #:flat #t)]))))
+
+(define (expression? v)
+  (or/c
+   value? v
+   application? v))
 
 (define (value? v)
-  (or
-   (atomic-value? v)
-   (matrix?       v)
-   (reference?    v)))
+  (or/c
+   atomic-value? 
+   matrix?      
+   reference?))
 
-;; matrix-rows is a vector-of vector-of atomic-value?
-(struct matrix
-  (rows)
+(define (atomic-value? v)
+  (or/c
+   number?
+   string?
+   boolean?
+   error?
+   nothing?))
+
+(define (nothing? v)
+  (eq? v 'nothing))
+
+(define (error? v)
+  (or/c 'error:arg 'error:undef 'error:val))
+
+
+;; --- References
+
+(struct reference
+  ()
   #:transparent)
-
-(define (matrix-ref m row col)
-  (vector-ref
-   (vector-ref (matrix-rows m) row)
-   col))
-
-(struct reference () #:transparent)
 (struct cell-reference reference
   (loc)
   #:transparent)
@@ -74,7 +93,9 @@ This module exports structure definitions which define a Grid programme
   (tl br)
   #:transparent)
 
-(struct location () #:transparent)
+(struct location
+  ()
+  #:transparent)
 (struct absolute-location location
   (label)
   #:transparent)
@@ -82,17 +103,23 @@ This module exports structure definitions which define a Grid programme
   (source target)
   #:transparent)
 
-(define (atomic-value? v)
-  (or
-   (number?  v)
-   (string?  v)
-   (boolean? v)
-   (error?   v)
-   (eq? v 'nothing))
-  )
+(provide
+ (contract-out
+  (struct reference ())
+  (struct (cell-reference reference) ([loc location?]))
+  (struct (range-reference reference) ([tl location?] [br location?]))
+  (struct location ())
+  (struct (absolute-location location) ([label string?]))
+  (struct (relative-location location) ([source string?] [target string?]))))
 
-(define (error? v)
-  (or
-   (eq? v 'error:arg)
-   (eq? v 'error:undef)
-   (eq? v 'error:val)))
+
+
+
+;; ---------------------------------------------------------------------------------------------------
+;; Utility functions
+
+;; matrix-ref : matrix? exact-nonnegative-integer? exact-nonnegative-integer? -> atomic-value? 
+(define (matrix-ref m row col)
+  (vector-ref
+   (vector-ref (matrix-rows m) row)
+   col))
