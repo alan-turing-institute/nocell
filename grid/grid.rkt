@@ -66,7 +66,7 @@ This module exports structure definitions which define a Grid programme
    matrix?      
    reference?))
 
-(define (atomic-value? v)
+(define atomic-value? 
   (or/c
    number?
    string?
@@ -132,6 +132,7 @@ This module exports structure definitions which define a Grid programme
 (module+ test
   (require rackunit)
 
+  ;; Atomic values
   (define avs
     (list 42.0 "foo" #t #f 'error:arg 'error:val 'error:undef 'nothing))
   
@@ -140,11 +141,14 @@ This module exports structure definitions which define a Grid programme
     (check-pred value? v)
     (check-pred expression? v))
 
+  ;; Values
+  ;; Matrices
   (define m (matrix #(#(0.0 1.0) #(2.0 3.0))))
   (check-pred value? m)
   (check-pred expression? m)
   (check-equal? (matrix-ref m 1 0) 2.0)
 
+  ;; References
   (define rs
     (list (cell-reference  (absolute-location "the-cell"))
           (range-reference (absolute-location "the-cell-tl") (absolute-location "the-cell-br"))
@@ -157,4 +161,9 @@ This module exports structure definitions which define a Grid programme
     (check-pred value? r)
     (check-pred expression? r))
 
+  ;; Applications
+  (define app1 (application 'SUM '(1 2 3)))
+
+
+  
   )
