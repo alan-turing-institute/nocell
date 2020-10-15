@@ -57,8 +57,8 @@ This module exports structure definitions which define a Grid programme
 
 (define (expression? v)
   (or/c
-   value? v
-   application? v))
+   (value? v)
+   (application? v)))
 
 (define (value? v)
   (or/c
