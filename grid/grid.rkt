@@ -67,15 +67,6 @@ This module exports structure definitions which define a Grid programme
    (matrix? v)
    (reference? v)))
 
-<<<<<<< HEAD
-(define atomic-value? 
-  (or/c
-   number?
-   string?
-   boolean?
-   error?
-   nothing?))
-=======
 (define (atomic-value? v)
   (or
    (number? v)
@@ -83,7 +74,6 @@ This module exports structure definitions which define a Grid programme
    (boolean? v)
    (error? v)
    (nothing? v)))
->>>>>>> main
 
 (define (nothing? v)
   (eq? v 'nothing))
@@ -136,7 +126,6 @@ This module exports structure definitions which define a Grid programme
   (vector-ref
    (vector-ref (matrix-rows m) row)
    col))
-<<<<<<< HEAD
 
 
 
@@ -181,5 +170,3 @@ This module exports structure definitions which define a Grid programme
 
   
   )
-=======
->>>>>>> main
