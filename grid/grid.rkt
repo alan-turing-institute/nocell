@@ -53,7 +53,7 @@ This module exports structure definitions which define a Grid programme
     ([fn   builtin?]
      [args (listof expression?)]))
   (struct matrix
-    ([rows (vectorof (vectorof atomic-value? #:flat #t) #:flat #t)]))))
+    ([rows (vectorof (vectorof atomic-value? #:flat? #t) #:flat? #t)]))))
 
 (define (expression? v)
   (or/c
