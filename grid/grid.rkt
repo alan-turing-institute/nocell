@@ -57,29 +57,31 @@ This module exports structure definitions which define a Grid programme
     ([rows (vectorof (vectorof atomic-value? #:flat? #t) #:flat? #t)]))))
 
 (define (expression? v)
-  (or/c
-   value?
-   application?))
+  (or
+   (value? v)
+   (application? v)))
 
 (define (value? v)
-  (or/c
-   atomic-value? 
-   matrix?      
-   reference?))
+  (or
+   (atomic-value? v)
+   (matrix? v)
+   (reference? v)))
 
 (define (atomic-value? v)
-  (or/c
-   number?
-   string?
-   boolean?
-   error?
-   nothing?))
+  (or
+   (number? v)
+   (string? v)
+   (boolean? v)
+   (error? v)
+   (nothing? v)))
 
 (define (nothing? v)
   (eq? v 'nothing))
 
 (define (error? v)
-  (or/c 'error:arg 'error:undef 'error:val))
+  (memv v (list 'error:arg
+                'error:undef
+                'error:val)))  
 
 
 ;; --- References
