@@ -1,5 +1,6 @@
 #lang racket
 
+
 ;output basic grid sheets to ods.
 (require sxml
          "./namespaces.rkt"
@@ -16,7 +17,7 @@
 ;-------SXML -> FLAT ODS FUNCTIONS -------------
 
 ;; can save flat directly to xml
-(define (save_fods sheet
+(define (fsxml->fods sheet
                    #:path [path "flat_ods.xml"]
                    #:open [open #t])
   (call-with-output-file path #:exists 'replace
@@ -25,11 +26,11 @@
       (void)))
 
 ;;basic one-cell flat ods.
-(define (flatsheet prog)
+(define (prog->fsxml prog)
   `(*TOP* ,NS ,PI
                  (office:document ,TYPE
                     (office:body
-                     ,@(map sheet-sxml (program-sheets prog))))))
+                     ,@(map sheet->sxml (program-sheets prog))))))
 
 
 ;---------SXML -> EXTENDED ODS FUNCTIONS----------
@@ -39,7 +40,7 @@
   `(*TOP* ,NS ,PI
                  (office:document-content ,TYPE
                     (office:body
-                     ,@(map sheet-sxml (program-sheets prog))))))
+                     ,@(map sheet->sxml (program-sheets prog))))))
   
 (define stylesxml `(*TOP* ,NS ,PI
                  (office:document-styles ,TYPE
@@ -53,10 +54,10 @@
                     (manifest:file-entry (@ (manifest:full-path "styles.xml") (manifest:media-type "text/xml")))
                      )))
 
-(define (extendedsheet prog)
+(define (prog->esxml prog)
   (list (contentxml prog) stylesxml manifestxml))
 
-(define (save_ods odslist
+(define (esxml->eods odslist
                   #:name [dir "ods_example"]
                   #:open [open #f])
 
@@ -94,24 +95,55 @@
 ;---------- GRID -> SXML ------------
 
 ; each cell is a quasiquote entry with unqoute splicing
-(define (cell-sxml cell)
- `(table:table-cell (@ (office:value ,(~a (cell-xpr cell))) (office:value-type "float")))) ;the type should return different values depending on cell-xpr
 
-(define (row-sxml row)
+; --- functions for different cell inputs
+(define (valtype cell)
+  (define xpr (cell-xpr cell))
+  (cond [(string? xpr) "string"]
+        [(number? xpr) "float"]
+        [else (error "unrecognised type")]))
+
+(define (val cell)
+  (define xpr (cell-xpr cell))
+  (define str-xpr (~a xpr))
+  (cond [(string? xpr) `(office:string-value ,str-xpr)]
+        [(number? xpr) `(office:value ,str-xpr)]
+        [else (error "unrecognised type")]))
+ 
+(define (cell->sxml cell)
+  `(table:table-cell (@ (office:value-type ,(valtype cell)) ,(val cell)))) ;the type should return different values depending on cell-xpr
+
+(define (row->sxml row)
   `(table:table-row
-    ,@(map cell-sxml row)))
+    ,@(map cell->sxml row)))
 
-(define (sheet-sxml sheet)
+(define (sheet->sxml sheet)
   `(office:spreadsheet
      (table:table
-      ,@(map row-sxml (sheet-rows sheet)))))
+      ,@(map row->sxml (sheet-rows sheet)))))
 
 (define factorial_sheet (factorial_prog 5))
 
 ;test flat_ods
-(define flat_sheet (flatsheet factorial_sheet))
-(save_fods flat_sheet)
+(define flat_sheet (prog->fsxml factorial_sheet))
+(fsxml->fods flat_sheet)
 
 ;test ext_ods
-(define extended_sheet (extendedsheet factorial_sheet))
-(save_ods extended_sheet #:open #t)
+(define extended_sheet (prog->esxml factorial_sheet))
+(esxml->eods extended_sheet #:open #t)
+
+
+(module+ test
+  (require rackunit)
+  (check-equal? (val (cell "1")) `(office:string-value "1"))
+  (check-equal? (val (cell 1)) `(office:value "1"))
+  (check-equal?
+   (sheet->sxml (sheet
+               (list (list (cell 1)) (list (cell 2)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "float") (office:value "1"))))
+      (table:table-row
+       (table:table-cell (@ (office:value-type "float") (office:value "2")))))))
+ ) 
