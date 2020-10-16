@@ -111,21 +111,55 @@
 ;---------- GRID -> SXML ------------
 
 ; --- functions for different cell inputs
-(define (valtype cell)
-  (define xpr (cell-xpr cell))
-  (cond [(string? xpr) "string"]
-        [(number? xpr) "float"]
-        [else (error "unrecognised type")]))
 
-(define (val cell)
+#|
+TYPES                         DONE
+
+number?                        x
+string?                        x
+boolean?     
+error?       
+nothing?
+matrix?
+reference?
+- cell-reference
+  - absolute-location
+  - relative-location
+- range-reference
+  - absolute-location
+  - relative-location
+application? 
+|#
+
+
+(define (cellattr cell);change attributes depending on cell contents
   (define xpr (cell-xpr cell))
-  (define str-xpr (~a xpr))
-  (cond [(string? xpr) `(office:string-value ,str-xpr)]
-        [(number? xpr) `(office:value ,str-xpr)]
-        [else (error "unrecognised type")]))
- 
+  (cond
+    [(string? xpr)
+     `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
+    ;;
+    [(number? xpr)
+     `(@ (office:value-type "float") (office:value ,(~a xpr)))]
+    ;;
+    [(reference? xpr)
+     (cond
+       [(cell-reference? xpr)
+        (let ([loc (cell-reference-loc xpr)])
+          (println "here")
+          (cond
+            [(absolute-location? loc)
+             `(@ (table:formula ,(string-append "=" (absolute-location-label loc))))]
+            ;;
+            [(relative-location? loc) (error "relative loc todo")]))]
+          ;;
+       [(range-reference? xpr) (error "range reference to do")])]
+    ;;
+    [else (error "unrecognised type")]))
+
+
+;; ---- build to sxml
 (define (cell->sxml cell)
-  `(table:table-cell (@ (office:value-type ,(valtype cell)) ,(val cell)))) ;the type should return different values depending on cell-xpr
+  `(table:table-cell ,(cellattr cell))) ;the type should return different values depending on cell-xpr
 
 (define (row->sxml row)
   `(table:table-row
@@ -139,8 +173,8 @@
 
 (module+ test
   (require rackunit)
-  (check-equal? (val (cell "1")) `(office:string-value "1"))
-  (check-equal? (val (cell 1)) `(office:value "1"))
+  (check-equal? (cellattr (cell "1")) `(@ (office:value-type "string") (office:string-value "1")))
+  (check-equal? (cellattr (cell 1)) `(@ (office:value-type "float") (office:value "1")))
   (check-equal?
    (sheet->sxml (sheet
                (list (list (cell 1)) (list (cell 2)))))
