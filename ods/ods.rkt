@@ -1,10 +1,22 @@
 #lang racket
 
+(provide
+ (contract-out
+  [prog->fsxml (-> program? sxmlfile?)]
+  [prog->esxml (-> program? esxmlfile?)]
+  [fsxml->fods (->* (sxmlfile?)
+                   (#:open boolean? #:path string?)
+                   any)]
+  [esxml->eods (->* (esxmlfile?)
+                   (#:open boolean? #:dir string?)
+                   any)]
+  (struct esxmlfile ([files (listof sxmlfile?)]))))
+
+
 
 ;output basic grid sheets to ods.
 (require sxml
          "./namespaces.rkt"
-         "./hand_example.rkt"
          "../grid/grid.rkt")
 
 ;----- HEADER INFO -----------
@@ -21,54 +33,58 @@
                    #:path [path "flat_ods.xml"]
                    #:open [open #t])
   (call-with-output-file path #:exists 'replace
-    (lambda (out) (srl:sxml->xml sheet out)))
+    (lambda (out) (srl:sxml->xml (sxmlfile-sexp sheet) out)))
   (if open (system  (string-append "open -a \"LibreOffice\" " path))
       (void)))
 
+(struct sxmlfile (sexp) #:transparent)
+(struct esxmlfile (files) #:transparent)
+
 ;;basic one-cell flat ods.
 (define (prog->fsxml prog)
-  `(*TOP* ,NS ,PI
+  (sxmlfile `(*TOP* ,NS ,PI
                  (office:document ,TYPE
                     (office:body
-                     ,@(map sheet->sxml (program-sheets prog))))))
+                     ,@(map sheet->sxml (program-sheets prog)))))))
 
 
 ;---------SXML -> EXTENDED ODS FUNCTIONS----------
 
 ;mostly hardcoded for now, but styles and manifest need to adapt to input
 (define (contentxml prog)
-  `(*TOP* ,NS ,PI
+  (sxmlfile `(*TOP* ,NS ,PI
                  (office:document-content ,TYPE
                     (office:body
-                     ,@(map sheet->sxml (program-sheets prog))))))
+                     ,@(map sheet->sxml (program-sheets prog)))))))
   
-(define stylesxml `(*TOP* ,NS ,PI
+(define stylesxml
+  (sxmlfile `(*TOP* ,NS ,PI
                  (office:document-styles ,TYPE
                     (office:styles
-                     (style:style)))))
+                     (style:style))))))
 
-(define manifestxml `(*TOP* ,NS ,PI
+(define manifestxml
+  (sxmlfile `(*TOP* ,NS ,PI
                  (manifest:manifest (@ (manifest:version "1.3"))
                     (manifest:file-entry (@ (manifest:full-path "/") (manifest:version "1.3") (manifest:media-type ,MIME)))
                     (manifest:file-entry (@ (manifest:full-path "content.xml") (manifest:media-type "text/xml")))
                     (manifest:file-entry (@ (manifest:full-path "styles.xml") (manifest:media-type "text/xml")))
-                     )))
+                     ))))
 
 (define (prog->esxml prog)
-  (list (contentxml prog) stylesxml manifestxml))
+  (esxmlfile (list (sxmlfile MIME) (contentxml prog) stylesxml manifestxml)))
 
 (define (esxml->eods odslist
-                  #:name [dir "ods_example"]
+                  #:dir [dir "ods_example"]
                   #:open [open #f])
 
   ;;first save all the files
   (make-directory* "META-INF") 
   (define fnlist (list "mimetype" "content.xml" "styles.xml" "META-INF/manifest.xml"))
-  (define filelist (append (list MIME) odslist))
   (for ([fn fnlist]
-        [sh filelist])
+        [sh (esxmlfile-files odslist)])
      (call-with-output-file fn #:exists 'replace
-    (lambda (out) (srl:sxml->xml sh out))))
+    (lambda (out) (srl:sxml->xml (sxmlfile-sexp sh) out))))
   
   ;;then zip them.
   (define odsfolder (string-append "\"" dir ".ods\""))
@@ -93,8 +109,6 @@
       (void)))
 
 ;---------- GRID -> SXML ------------
-
-; each cell is a quasiquote entry with unqoute splicing
 
 ; --- functions for different cell inputs
 (define (valtype cell)
@@ -121,16 +135,6 @@
   `(office:spreadsheet
      (table:table
       ,@(map row->sxml (sheet-rows sheet)))))
-
-(define factorial_sheet (factorial_prog 5))
-
-;test flat_ods
-(define flat_sheet (prog->fsxml factorial_sheet))
-(fsxml->fods flat_sheet)
-
-;test ext_ods
-(define extended_sheet (prog->esxml factorial_sheet))
-(esxml->eods extended_sheet #:open #t)
 
 
 (module+ test
