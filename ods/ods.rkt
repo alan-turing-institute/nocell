@@ -10,7 +10,7 @@
 
 (define PI `(*PI* xml "version=\"1.0\" encoding=\"UTF-8\""))
 (define MIME "application/vnd.oasis.opendocument.spreadsheet")
-(define TYPE `(@ (office:version "1.2") (office:mimetype ,MIME)))
+(define TYPE `(@ (office:version "1.3") (office:mimetype ,MIME)))
 
 
 ;-------SXML -> FLAT ODS FUNCTIONS -------------
