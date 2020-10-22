@@ -17,7 +17,8 @@ This module exports structure definitions which define a Grid programme
  expression?
  value?
  atomic-value?
- error?)
+ error?
+ nothing?)
 
 
 ;; --- Programs, sheets, and cells

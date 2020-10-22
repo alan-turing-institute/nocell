@@ -117,20 +117,30 @@ TYPES                         DONE
 
 number?                        x
 string?                        x
-boolean?     
-error?       
-nothing?
+boolean?                       X
+error?                         x
+nothing?                       x
 matrix?
 reference?
 - cell-reference
-  - absolute-location
+  - absolute-location          -
   - relative-location
 - range-reference
   - absolute-location
   - relative-location
-application? 
+application?
+
+
+Note that booleans in excel seem to be "1" or "0". You can add a boolean, e.g. 30+TRUE = 31.
+
+
+Need to convert a lists of lists into a hash table of cell positions.
+
 |#
 
+(define errors (make-hash (list (cons 'error:arg "of:=#VALUE!")
+                                (cons 'error:undef "of:=#N/A")
+                                (cons 'error:val "of:=#N/A"))))
 
 (define (cellattr cell);change attributes depending on cell contents
   (define xpr (cell-xpr cell))
@@ -140,7 +150,14 @@ application?
     ;;
     [(number? xpr)
      `(@ (office:value-type "float") (office:value ,(~a xpr)))]
+    ;; office:value-type="float" office:value="<xpr>"
+    ;; 
+    [(boolean? xpr)
+      `(@ (office:value-type "boolean") (office:boolean-value ,(if xpr "true" "false")))]
     ;;
+    [(error? xpr)
+     `(@ (table:formula ,(hash-ref errors xpr)))]
+     ;;
     [(reference? xpr)
      (cond
        [(cell-reference? xpr)
@@ -159,7 +176,10 @@ application?
 
 ;; ---- build to sxml
 (define (cell->sxml cell)
-  `(table:table-cell ,(cellattr cell))) ;the type should return different values depending on cell-xpr
+  
+  (if (nothing? (cell-xpr cell))
+      '(table:table-cell)
+      `(table:table-cell , (cellattr cell)))) ;the type should return different values depending on cell-xpr
 
 (define (row->sxml row)
   `(table:table-row
@@ -170,11 +190,43 @@ application?
      (table:table
       ,@(map row->sxml (sheet-rows sheet)))))
 
+;; -------------------------------- TESTS ----------------------
 
 (module+ test
   (require rackunit)
-  (check-equal? (cellattr (cell "1")) `(@ (office:value-type "string") (office:string-value "1")))
-  (check-equal? (cellattr (cell 1)) `(@ (office:value-type "float") (office:value "1")))
+
+  ;; Atomic values, number? string? boolean? error? nothing?
+
+  ;; number?
+  (check-equal? (cell->sxml (cell 1)) '(table:table-cell (@ (office:value-type "float") (office:value "1"))))
+  (check-equal? (cell->sxml (cell 42.0)) '(table:table-cell (@ (office:value-type "float") (office:value "42.0"))))
+
+  ;; string?
+  (check-equal? (cell->sxml (cell "")) '(table:table-cell (@ (office:value-type "string") (office:string-value ""))))
+  (check-equal? (cell->sxml (cell "hello")) '(table:table-cell (@ (office:value-type "string") (office:string-value "hello"))))
+  
+  ;; boolean?
+  (check-equal? (cell->sxml (cell #t)) '(table:table-cell (@ (office:value-type "boolean") (office:boolean-value "true"))))
+  (check-equal? (cell->sxml (cell #f)) '(table:table-cell (@ (office:value-type "boolean") (office:boolean-value "false"))))
+   
+  ;; nothing?
+  (check-equal? (cell->sxml (cell 'nothing)) '(table:table-cell))
+
+  ;; error?
+  (check-equal? (cell->sxml (cell 'error:arg)) '(table:table-cell (@ (table:formula "of:=#VALUE!")))) 
+  (check-equal? (cell->sxml (cell 'error:undef)) '(table:table-cell (@ (table:formula "of:=#N/A"))))
+  (check-equal? (cell->sxml (cell 'error:val)) '(table:table-cell (@ (table:formula "of:=#N/A")))) 
+
+  ;'error:arg - argument is wrong type #VALUE!
+  ;'error:undef - function cannot be evaluated (1/0) #N/A
+  ;'error:val - missing value #N/A
+  ; excel errors: #DIV/0! #NAME? #NULL! #REF! #N/A #VALUE!
+
+#|
+  ;; application?
+  (check-equal? (cell->sxml (cell (+ 1 2))) '(table:table-cell (@ (table:formula "of:=1+2"))))
+|#
+  
   (check-equal?
    (sheet->sxml (sheet
                (list (list (cell 1)) (list (cell 2)))))
