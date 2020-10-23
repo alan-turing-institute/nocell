@@ -106,7 +106,8 @@ be? Maybe if it's grid->fsxml the output should be of type `fsxml`?
 ;output basic grid sheets to ods.
 (require sxml
          "./namespaces.rkt"
-         "../grid/grid.rkt")
+         "../grid/grid.rkt"
+         "./column-letters.rkt")
 
 
 ;; JG: What kinds of "headers" have information here? Is it headers for this
@@ -241,6 +242,26 @@ Need to convert a lists of lists into a hash table of cell positions.
 
 |#
 
+
+;; builds a hash table of the labelled cells and their alphanumeric positions
+(define (cell-hash sheet)
+  ;; rows go 1,2,3,4 ...
+  ;; columns go A,B,C,D...
+  ;; if not a labelled cell add it as a hash pointing to itself.
+  (let ([rows (sheet-rows sheet)]
+        [h (make-hash)])
+    (for ([i (length rows)] [row rows])
+      (for ([j (length row)] [cell row])
+        (if (labelled-cell? cell)
+            (hash-set! h
+                       (labelled-cell-lbl cell)
+                       (string-append (integer->column-letter j) (~a (add1 i))))
+            (hash-set! h
+                       (string-append (integer->column-letter j) (~a (add1 i))) 
+                       (string-append (integer->column-letter j) (~a (add1 i)))))))
+    h))
+
+
 (define errors (make-hash (list (cons 'error:arg "of:=#VALUE!")
                                 (cons 'error:undef "of:=#N/A")
                                 (cons 'error:val "of:=#N/A"))))
@@ -342,6 +363,15 @@ Need to convert a lists of lists into a hash table of cell positions.
   ;; application?
   (check-equal? (cell->sxml (cell (+ 1 2))) '(table:table-cell (@ (table:formula "of:=1+2"))))
 |#
+
+
+  ;;cell-hash test
+  (check-equal? (cell-hash (sheet
+                           (list
+                            (list (labelled-cell "" "cell1") (cell "") (labelled-cell "" "cell3"))
+                            (list (labelled-cell "" "cell4") (labelled-cell "" "cell5") (cell "")))))
+               #hash(("B1" . "B1") ("C2" . "C2") ("cell1" . "A1") ("cell3" . "C1") ("cell4" . "A2") ("cell5" . "B2"))) ;at the moment the keys return alphabetically
+
   
   (check-equal?
    (sheet->sxml (sheet
