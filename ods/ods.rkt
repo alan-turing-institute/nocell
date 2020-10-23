@@ -1,10 +1,99 @@
+#| JG:
+Comments starting with "JG:" are review comments.
+
+Summary of comments: 
+
+1. My main comment is to aim for precise and thoughtful comments. This is highly
+non-trivial. In addition, names of functions are really hard to get right. 
+
+In general, the code should self-document its specific purpose and its place in
+the overall organisation. Comments could elucidate an algorithm; make something
+clear that would otherwise be opaque; outline what assumptions are being made at
+any point, and so on.
+
+2. Scheme comment style is:
+   - ;;; Three semi-colons for major sections (aligned left)
+   - ;;  Two semi-colons for comments on their own line (indent to same level as
+code)
+   - ; Single semi-colon for comments following code, on the same line (use sparingly)
+
+3. It's probably okay to rely on external zip, though it's not great. But
+definitely don't do system "rm" -- there must be a racket interface to the
+filesystem. In particular, rm won't work on Windows. 
+
+4. Write this module as if it were genuinely a utility library already, not a
+"getting things working" scratchpad. If you need to test things out, have that
+in a different file which require's this one. For example, stuff like opening
+libreoffice should be in a different module.
+
+5. I feel like the filesystem stuff is rather mixed up with the ->sxml stuff. It
+really wants to be extremely clear. In fact, I would go so far as to say that,
+if the main purpose of this module is to have effects on the filesystem, then
+*all* the grid->sxml stuff should go in one separate module, and all the
+filesystem stuff should go in another. 
+|#
+
+
+;; JG: Prefer racket/base
 #lang racket
 
+#| JG:
+Probably one should have a module purpose right at the top. Suggest something
+like:
+
+A backend for grid which produces Open Document Format spreadsheets. 
+See here for the specification: 
+
+Notable differences between Grid and ODF:
+- blah blah
+
+Note: the commands foo, bar require that an executable `zip` program is in the
+user's path. (What happens if it isn't?)
+
+Then perhaps a description of the structure of this file, for example:
+and then make headers that match these descriptions (or better versions thereof).
+
+1. Interface
+2. Conversion of the consituents of a grid program to xml
+3. Adding the necessary wrappers and headers to the xml output 
+4. Serialisation (including zipping) 
+5. Utilities private to this module
+
+It's not really critical that the structure is exactly that, but there should be
+some structure.
+
+Some Racket style guide recommends lines no more than 102 characters. That's
+this long:
+;; ---------------------------------------------------------------------------------------------------
+
+You can also use that line as a section separator.
+
+|#
+
+
+#| JG: 
+I think the names here need some thought. I don't have a good answer,
+but:
+
+- I think grid->foo is better than prog->foo. (And program->foo would be better
+than prog->foo. Scheme tends to abbreviate less than other
+languages. grid-program->foo would be fine, too.)
+
+- The difference between fsxml, esxml, fods, and eods isn't clear. 
+
+- Is a thing that is an `sxmlfile?` actually a file? (btw, in Scheme one tends to
+use "snake-case" a lot, so this would be `sxml-file?`) What would a file even
+be? Maybe if it's grid->fsxml the output should be of type `fsxml`?
+
+
+|#
 (provide
  (contract-out
   [prog->fsxml (-> program? sxmlfile?)]
   [prog->esxml (-> program? esxmlfile?)]
   [fsxml->fods (->* (sxmlfile?)
+                    ;; JG: I think the next line should align with the one
+                    ;; above, for example.
                    (#:open boolean? #:path string?)
                    any)]
   [esxml->eods (->* (esxmlfile?)
@@ -19,12 +108,22 @@
          "./namespaces.rkt"
          "../grid/grid.rkt")
 
+
+;; JG: What kinds of "headers" have information here? Is it headers for this
+;; module, or something else?
 ;----- HEADER INFO -----------
 
+;; JG: Maybe ` should be ' ?
 (define PI `(*PI* xml "version=\"1.0\" encoding=\"UTF-8\""))
 (define MIME "application/vnd.oasis.opendocument.spreadsheet")
+;; JG: Maybe just embed MIME in TYPE unless it is likely to be used elsewhere?
 (define TYPE `(@ (office:version "1.3") (office:mimetype ,MIME)))
 
+;; JG: Probably don't need the word "function". How about the following (where
+;; "fods" should be explained somewhere else.):
+
+;; ---------------------------------------------------------------------------------------------------
+;; Convert an sxml description of a spreadsheet to fods   
 
 ;-------SXML -> FLAT ODS FUNCTIONS -------------
 
@@ -50,6 +149,7 @@
 
 ;---------SXML -> EXTENDED ODS FUNCTIONS----------
 
+;; JG: Maybe content/xml, styles/xml etc? Or xml-content, xml-styles, ...
 ;mostly hardcoded for now, but styles and manifest need to adapt to input
 (define (contentxml prog)
   (sxmlfile `(*TOP* ,NS ,PI
@@ -89,15 +189,18 @@
   ;;then zip them.
   (define odsfolder (string-append "\"" dir ".ods\""))
   (define cmdmime (string-join (list "zip -0 -X" odsfolder (first fnlist)) " "))
-  (displayln cmdmime)
+  (displayln cmdmime) 
   (system cmdmime)
   (for ([fn (rest fnlist)])
     (define cmd (string-join (list "zip -r" odsfolder fn) " "))
     (displayln cmd)
     (system cmd))
 
+  ;; JG: Changed formatting here. Also ";;then clear up" could be ";; Remove
+  ;; temporary files."
   ;;then clear up.
-   (for ([fn fnlist])(system (string-append "rm " fn)))
+  (for ([fn fnlist])
+    (system (string-append "rm " fn)))
        
   ;; and open
   (if open (let* ([zip1 (string-append "open -a \"Microsoft Excel\" " odsfolder)]
@@ -142,11 +245,20 @@ Need to convert a lists of lists into a hash table of cell positions.
                                 (cons 'error:undef "of:=#N/A")
                                 (cons 'error:val "of:=#N/A"))))
 
+
+;; JG: Here's a good example where you could usefully be much more precise with
+;; documentation. Also, `cellattr` isn't a great name. 
 (define (cellattr cell);change attributes depending on cell contents
+  ;; JG: I think we're extracting the cell contents (`xpr`), which is an
+  ;; `expression?`, and converting thatto the attributes of a table:table-cell
+  ;; tag? maybe pull out the xpr before calling this function, and maybe it's
+  ;; just `expression->xml/attributes`?
   (define xpr (cell-xpr cell))
   (cond
     [(string? xpr)
      `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
+    ;; JG: If you'd like to leave a blank line, you can just do so: you don't
+    ;; need a comment marker.
     ;;
     [(number? xpr)
      `(@ (office:value-type "float") (office:value ,(~a xpr)))]
@@ -159,10 +271,11 @@ Need to convert a lists of lists into a hash table of cell positions.
      `(@ (table:formula ,(hash-ref errors xpr)))]
      ;;
     [(reference? xpr)
+     ;; JG: Here you might want to call out to a helper function. 
      (cond
        [(cell-reference? xpr)
         (let ([loc (cell-reference-loc xpr)])
-          (println "here")
+          (println "here") ;; JG: Is this for debugging?
           (cond
             [(absolute-location? loc)
              `(@ (table:formula ,(string-append "=" (absolute-location-label loc))))]
@@ -174,6 +287,9 @@ Need to convert a lists of lists into a hash table of cell positions.
     [else (error "unrecognised type")]))
 
 
+;; JG: I think I'd probably define the more general function first, for
+;; readability. and probably all the grid-foo->sxml functions should go in one
+;; section. 
 ;; ---- build to sxml
 (define (cell->sxml cell)
   
