@@ -52,18 +52,19 @@ that an executable `zip` program is in the user's path.
 (define (grid-sheet->sxml sheet)
   `(office:spreadsheet
     (table:table
-     ,@(map grid-row->sxml (sheet-rows sheet)))))
+     ,@(map (curry grid-row->sxml #:cell-hash (cell-hash sheet))
+            (sheet-rows sheet)))))
 
-(define (grid-row->sxml row)
+(define (grid-row->sxml row #:cell-hash cell-hash)
   `(table:table-row
-    ,@(map grid-cell->sxml row)))
+    ,@(map (curry grid-cell->sxml cell-hash) row)))
 
-(define (grid-cell->sxml cell)
+(define (grid-cell->sxml cell #:cell-hash cell-hash)
   (if (nothing? (cell-xpr cell))
       '(table:table-cell)
-      `(table:table-cell , (grid-expression->sxml-attributes (cell-xpr cell))))) 
+      `(table:table-cell , (grid-expression->sxml-attributes #:cell-hash cell-hash (cell-xpr cell))))) 
 
-(define (grid-expression->sxml-attributes xpr)
+(define (grid-expression->sxml-attributes xpr #:cell-hash cell-hash)
   (cond
     [(string? xpr)
      `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
@@ -78,7 +79,7 @@ that an executable `zip` program is in the user's path.
      `(@ (table:formula ,(hash-ref errors xpr)))]
 
     [(reference? xpr)
-     (cell-references xpr)]
+     (cell-references xpr #:cell-hash cell-hash)]
 
     [(application? xpr)
      (error "applications not yet supported")]
@@ -90,14 +91,16 @@ that an executable `zip` program is in the user's path.
                                 (cons 'error:undef "of:=#N/A")
                                 (cons 'error:val "of:=#N/A"))))
 
-(define (cell-references xpr)
+(define (cell-references xpr #:cell-hash cell-hash)
   (cond
     [(cell-reference? xpr)
      (let ([loc (cell-reference-loc xpr)])
        (cond
          [(absolute-location? loc)
           ;; placeholder: this should eventually reference a cell-hash
-          `(@ (table:formula ,(string-append "=" (absolute-location-label loc))))]
+          `(@ (table:formula ,(string-append
+                               "="
+                               (hash-ref cell-hash (absolute-location-label loc)))))]
             
          [(relative-location? loc) (error "relative location not yet supported")]))]
           
