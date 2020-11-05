@@ -54,65 +54,63 @@ that an executable `zip` program is in the user's path.
   (define cell-hash (grid-sheet->cell-label-hash sheet))
 
   (define (grid-row->sxml row)
-      `(table:table-row
-        ,@(map grid-cell->sxml row)))
+    `(table:table-row
+      ,@(map grid-cell->sxml row)))
 
   (define (grid-cell->sxml cell)
-      (if (nothing? (cell-xpr cell))
-          '(table:table-cell)
-          `(table:table-cell ,(grid-expression->sxml-attributes (cell-xpr cell)))))
+    (if (nothing? (cell-xpr cell))
+        '(table:table-cell)
+        `(table:table-cell ,(grid-expression->sxml-attributes (cell-xpr cell)))))
 
   (define (grid-expression->sxml-attributes xpr)
-      (cond
-        [(string? xpr)
-         `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
+    (cond
+      [(string? xpr)
+       `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
 
-        [(number? xpr)
-         `(@ (office:value-type "float") (office:value ,(~a xpr)))]
+      [(number? xpr)
+       `(@ (office:value-type "float") (office:value ,(~a xpr)))]
 
-        [(boolean? xpr)
-         `(@ (office:value-type "boolean") (office:boolean-value ,(if xpr "true" "false")))]
+      [(boolean? xpr)
+       `(@ (office:value-type "boolean") (office:boolean-value ,(if xpr "true" "false")))]
 
-        [(error? xpr)
-         `(@ (table:formula ,(hash-ref errors xpr)))]
+      [(error? xpr)
+       `(@ (table:formula ,(hash-ref errors xpr)))]
 
-        [(reference? xpr)
-         (cell-references xpr #:cell-hash cell-hash)]
+      [(reference? xpr)
+       (grid-cell-reference->sxml-cell-position xpr #:cell-hash cell-hash)]
 
-        [(application? xpr)
-         (error "applications not yet supported")]
+      [(application? xpr)
+       (error "applications not yet supported")]
     
-        [else (error "unrecognised type")]))
+      [else (error "unrecognised type")]))
 
   
   `(office:spreadsheet
     (table:table
      ,@(map grid-row->sxml (sheet-rows sheet)))))
 
-    
 
-    
-    
 
 
 (define errors (make-hash (list (cons 'error:arg "of:=#VALUE!")
                                 (cons 'error:undef "of:=#N/A")
                                 (cons 'error:val "of:=#N/A"))))
 
-(define (cell-references xpr #:cell-hash cell-hash)
+(define (grid-cell-reference->sxml-cell-position xpr #:cell-hash cell-hash)
   (cond
     [(cell-reference? xpr)
      (let ([loc (cell-reference-loc xpr)])
        (cond
          [(absolute-location? loc)
-          ;; placeholder: this should eventually reference a cell-hash
-          `(@ (table:formula ,(string-append
-                               "="
+          `(@ (table:formula ,(make-absolute
                                (hash-ref cell-hash (absolute-location-label loc)))))]
             
          [(relative-location? loc) (error "relative location not yet supported")]))]
           
-    [(range-reference? xpr) (error "range reference not yet supportedc")]))
+    [(range-reference? xpr) (error "range reference not yet supported")]))
+
+(define (make-absolute label)
+  (string-append* (list "=$" (substring label 0 1) "$" (substring label 1))))
 
 
 ;; builds a hash table of the labelled cells and their alphanumeric positions
@@ -320,19 +318,31 @@ that an executable `zip` program is in the user's path.
 
 
   ;;cell-hash test
-  (check-equal? (grid-sheet->cell-label-hash
-                 (sheet
-                  (list
-                   (list (labelled-cell "" "cell1") (cell "") (labelled-cell "" "cell3"))
-                   (list (labelled-cell "" "cell4") (labelled-cell "" "cell5") (cell "")))))
+  ;;use below cell-hash in cell-reference? tests.
+  (define cell-hash (grid-sheet->cell-label-hash
+                     (sheet
+                      (list
+                       (list (labelled-cell "" "cell1") (cell "") (labelled-cell "" "cell3"))
+                       (list (labelled-cell "" "cell4") (labelled-cell "" "cell5") (cell ""))))))
+    
+  (check-equal? cell-hash
                 #hash(("B1" . "B1")
                       ("C2" . "C2")
                       ("cell1" . "A1")
                       ("cell3" . "C1")
                       ("cell4" . "A2")
                       ("cell5" . "B2"))) ;at the moment the keys return alphabetically
-  
-  
+
+
+  ;;cell-reference? absolute-location? test
+  (define referent (cell (cell-reference (absolute-location "cell1"))))
+
+  (check-equal?
+   (grid-cell-reference->sxml-cell-position (cell-xpr referent) #:cell-hash cell-hash)
+   '(@ (table:formula "=$A$1")))
+
+    
+  ;;multiple cells test
   (check-equal?
    (grid-sheet->sxml (sheet
                       (list (list (cell 1)) (list (cell 2)))))
