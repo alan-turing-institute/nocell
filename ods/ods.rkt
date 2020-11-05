@@ -42,26 +42,32 @@ that an executable `zip` program is in the user's path.
 ;; Conversion of grid program to sxml-program structure with content and styles.
 
 (struct sxml-program (content styles) #:transparent)
+(struct indexes (row column) #:transparent)
 
+;; grid-program->sxml : program? -> sxml-program?
 (define (grid-program->sxml program)
   (sxml-program `(office:body
                   ,@(map grid-sheet->sxml (program-sheets program)))  
                 '(office:styles
                   (style:style))))
 
+;; grid-sheet->sxml : sheet? -> string?
 (define (grid-sheet->sxml sheet)
 
-  (define cell-hash (grid-sheet->cell-label-hash sheet))
+  (define cell-hash (locate-labelled-cells sheet))
 
+  ;; grid-row->sxml : [listof cell?] -> string?
   (define (grid-row->sxml row)
     `(table:table-row
       ,@(map grid-cell->sxml row)))
 
+  ;; grid-cell->sxml : cell? -> string?
   (define (grid-cell->sxml cell)
     (if (nothing? (cell-xpr cell))
         '(table:table-cell)
         `(table:table-cell ,(grid-expression->sxml-attributes (cell-xpr cell)))))
 
+  ;; grid-expression->sxml-attributes : expression? -> string?
   (define (grid-expression->sxml-attributes xpr)
     (cond
       [(string? xpr)
@@ -77,7 +83,7 @@ that an executable `zip` program is in the user's path.
        `(@ (table:formula ,(hash-ref errors xpr)))]
 
       [(reference? xpr)
-       (grid-cell-reference->sxml-cell-position xpr #:cell-hash cell-hash)]
+       `(@ (table:formula, (get-reference-formula xpr #:cell-hash cell-hash)))]
 
       [(application? xpr)
        (error "applications not yet supported")]
@@ -90,41 +96,39 @@ that an executable `zip` program is in the user's path.
      ,@(map grid-row->sxml (sheet-rows sheet)))))
 
 
-
-
 (define errors (make-hash (list (cons 'error:arg "of:=#VALUE!")
                                 (cons 'error:undef "of:=#N/A")
                                 (cons 'error:val "of:=#N/A"))))
 
-(define (grid-cell-reference->sxml-cell-position xpr #:cell-hash cell-hash)
+;;get-reference-formula : expression? [hash-of label? indexes?]
+(define (get-reference-formula xpr #:cell-hash cell-hash)
   (cond
     [(cell-reference? xpr)
      (let ([loc (cell-reference-loc xpr)])
        (cond
          [(absolute-location? loc)
-          `(@ (table:formula ,(make-absolute
-                               (hash-ref cell-hash (absolute-location-label loc)))))]
+          (get-absolute-formula (hash-ref cell-hash (absolute-location-label loc)))]
             
-         [(relative-location? loc) (error "relative location not yet supported")]))]
+         [(relative-location? loc) (error "relative references not yet supported")]))]
           
     [(range-reference? xpr) (error "range reference not yet supported")]))
 
-(define (make-absolute label)
-  (string-append* (list "=$" (substring label 0 1) "$" (substring label 1))))
+;; get-absolute-formula : pair? -> string?
+(define (get-absolute-formula i)
+  (string-append* (list "=$"
+                        (integer->column-letter (indexes-row i))
+                        "$"
+                        (~a (add1 (indexes-column i))))))
 
 
-;; builds a hash table of the labelled cells and their alphanumeric positions
-(define (grid-sheet->cell-label-hash sheet)
-  ;; rows go 1,2,3,4 ...; columns go A,B,C,D...
-  ;; if cell not a labelled-cell the hash points to itself.
-  (define (column-name i j) (string-append (integer->column-letter j) (~a (add1 i))))
+;; locate-labelled-cells : sheet? -> [hash-of label? indexes?]
+;; Determine the locations of labelled cells
+(define (locate-labelled-cells sheet)
   (for*/hash ([(row i) (in-indexed (sheet-rows sheet))]
-              [(cell j) (in-indexed row)])
-    (if (labelled-cell? cell)
+              [(cell j) (in-indexed row)]
+              #:when (labelled-cell? cell))
         (values (labelled-cell-lbl cell)
-                (column-name i j))
-        (values (column-name i j)
-                (column-name i j)))))
+                (indexes i j))))
 
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -319,27 +323,24 @@ that an executable `zip` program is in the user's path.
 
   ;;cell-hash test
   ;;use below cell-hash in cell-reference? tests.
-  (define cell-hash (grid-sheet->cell-label-hash
+  (define cell-hash (locate-labelled-cells
                      (sheet
                       (list
                        (list (labelled-cell "" "cell1") (cell "") (labelled-cell "" "cell3"))
                        (list (labelled-cell "" "cell4") (labelled-cell "" "cell5") (cell ""))))))
-    
-  (check-equal? cell-hash
-                #hash(("B1" . "B1")
-                      ("C2" . "C2")
-                      ("cell1" . "A1")
-                      ("cell3" . "C1")
-                      ("cell4" . "A2")
-                      ("cell5" . "B2"))) ;at the moment the keys return alphabetically
 
+  (check-equal? cell-hash
+                hash("cell1" . #(struct:indexes 0 0))
+                      ("cell3" . #(struct:indexes 0 2))
+                      ("cell4" . #(struct:indexes 1 0))
+                      ("cell5" . #(struct:indexes 1 1)))) 
 
   ;;cell-reference? absolute-location? test
   (define referent (cell (cell-reference (absolute-location "cell1"))))
 
   (check-equal?
-   (grid-cell-reference->sxml-cell-position (cell-xpr referent) #:cell-hash cell-hash)
-   '(@ (table:formula "=$A$1")))
+   (get-reference-formula (cell-xpr referent) #:cell-hash cell-hash)
+   "=$A$1")
 
     
   ;;multiple cells test
