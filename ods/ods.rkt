@@ -33,7 +33,7 @@ that an executable `zip` program is in the user's path.
  (contract-out
   [sxml->ods (->* (sxml-program?)
                   (#:filename string? #:type string?)
-                   any)]
+                  any)]
   [grid-program->sxml (-> program? sxml-program?)]))                   
 
 
@@ -50,41 +50,49 @@ that an executable `zip` program is in the user's path.
                   (style:style))))
 
 (define (grid-sheet->sxml sheet)
+
+  (define cell-hash (grid-sheet->cell-label-hash sheet))
+
+  (define (grid-row->sxml row)
+      `(table:table-row
+        ,@(map grid-cell->sxml row)))
+
+  (define (grid-cell->sxml cell)
+      (if (nothing? (cell-xpr cell))
+          '(table:table-cell)
+          `(table:table-cell ,(grid-expression->sxml-attributes (cell-xpr cell)))))
+
+  (define (grid-expression->sxml-attributes xpr)
+      (cond
+        [(string? xpr)
+         `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
+
+        [(number? xpr)
+         `(@ (office:value-type "float") (office:value ,(~a xpr)))]
+
+        [(boolean? xpr)
+         `(@ (office:value-type "boolean") (office:boolean-value ,(if xpr "true" "false")))]
+
+        [(error? xpr)
+         `(@ (table:formula ,(hash-ref errors xpr)))]
+
+        [(reference? xpr)
+         (cell-references xpr #:cell-hash cell-hash)]
+
+        [(application? xpr)
+         (error "applications not yet supported")]
+    
+        [else (error "unrecognised type")]))
+
+  
   `(office:spreadsheet
     (table:table
-     ,@(map (curry grid-row->sxml #:cell-hash (cell-hash sheet))
-            (sheet-rows sheet)))))
+     ,@(map grid-row->sxml (sheet-rows sheet)))))
 
-(define (grid-row->sxml row #:cell-hash cell-hash)
-  `(table:table-row
-    ,@(map (curry grid-cell->sxml cell-hash) row)))
-
-(define (grid-cell->sxml cell #:cell-hash cell-hash)
-  (if (nothing? (cell-xpr cell))
-      '(table:table-cell)
-      `(table:table-cell , (grid-expression->sxml-attributes #:cell-hash cell-hash (cell-xpr cell))))) 
-
-(define (grid-expression->sxml-attributes xpr #:cell-hash cell-hash)
-  (cond
-    [(string? xpr)
-     `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
-
-    [(number? xpr)
-     `(@ (office:value-type "float") (office:value ,(~a xpr)))]
-
-    [(boolean? xpr)
-     `(@ (office:value-type "boolean") (office:boolean-value ,(if xpr "true" "false")))]
-
-    [(error? xpr)
-     `(@ (table:formula ,(hash-ref errors xpr)))]
-
-    [(reference? xpr)
-     (cell-references xpr #:cell-hash cell-hash)]
-
-    [(application? xpr)
-     (error "applications not yet supported")]
     
-    [else (error "unrecognised type")]))
+
+    
+    
 
 
 (define errors (make-hash (list (cons 'error:arg "of:=#VALUE!")
@@ -108,7 +116,7 @@ that an executable `zip` program is in the user's path.
 
 
 ;; builds a hash table of the labelled cells and their alphanumeric positions
-(define (cell-hash sheet)
+(define (grid-sheet->cell-label-hash sheet)
   ;; rows go 1,2,3,4 ...; columns go A,B,C,D...
   ;; if cell not a labelled-cell the hash points to itself.
   (define (column-name i j) (string-append (integer->column-letter j) (~a (add1 i))))
@@ -181,11 +189,9 @@ that an executable `zip` program is in the user's path.
     [else (error "unrecognised type")]))
 
 
-
 (define (sxml->flat-ods sxml-program filename)
   (call-with-output-file (string-append filename ".xml") #:exists 'replace
     (lambda (out) (srl:sxml->xml (flat-sxml sxml-program) out))))
-
 
 
 (define (sxml->extended-ods sxml-program filename)
@@ -199,11 +205,9 @@ that an executable `zip` program is in the user's path.
   
   ;;zip.
   (define odsfolder (string-append "\"" filename ".ods\""))
-  (define cmdmime (string-join (list "zip -0 -X" odsfolder (first filelist)) " "))
-  (system cmdmime)
+  (system (string-join (list "zip -0 -X" odsfolder (first filelist)) " "))
   (for ([fn (rest filelist)])
-    (define cmd (string-join (list "zip -r" odsfolder fn) " "))
-    (system cmd))
+    (system (string-join (list "zip -r" odsfolder fn) " ")))
 
   ;; Remove temporary files
   (map delete-file filelist))
@@ -218,33 +222,94 @@ that an executable `zip` program is in the user's path.
   ;; Atomic values, number? string? boolean? error? nothing?
 
   ;; number?
-  (check-equal? (grid-cell->sxml (cell 1))
-                '(table:table-cell (@ (office:value-type "float") (office:value "1"))))
-  (check-equal? (grid-cell->sxml (cell 42.0))
-                '(table:table-cell (@ (office:value-type "float") (office:value "42.0"))))
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 1)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
+  
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 42.0)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "float") (office:value "42.0")))))))
+ 
 
   ;; string?
-  (check-equal? (grid-cell->sxml (cell ""))
-                '(table:table-cell (@ (office:value-type "string") (office:string-value ""))))
-  (check-equal? (grid-cell->sxml (cell "hello"))
-                '(table:table-cell (@ (office:value-type "string") (office:string-value "hello"))))
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell "")))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "string") (office:string-value "")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell "hello")))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "string") (office:string-value "hello")))))))
+
   
   ;; boolean?
-  (check-equal? (grid-cell->sxml (cell #t))
-                '(table:table-cell (@ (office:value-type "boolean") (office:boolean-value "true"))))
-  (check-equal? (grid-cell->sxml (cell #f))
-                '(table:table-cell (@ (office:value-type "boolean") (office:boolean-value "false"))))
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell #t)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "boolean") (office:boolean-value "true")))))))
+
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell #f)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "boolean") (office:boolean-value "false")))))))
+
    
   ;; nothing?
-  (check-equal? (grid-cell->sxml (cell 'nothing)) '(table:table-cell))
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'nothing)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell)))))
 
   ;; error?
-  (check-equal? (grid-cell->sxml (cell 'error:arg))
-                '(table:table-cell (@ (table:formula "of:=#VALUE!")))) 
-  (check-equal? (grid-cell->sxml (cell 'error:undef))
-                '(table:table-cell (@ (table:formula "of:=#N/A"))))
-  (check-equal? (grid-cell->sxml (cell 'error:val))
-                '(table:table-cell (@ (table:formula "of:=#N/A")))) 
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'error:arg)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=#VALUE!")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'error:undef)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=#N/A")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'error:val)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=#N/A")))))))
+
 
  
 
@@ -255,7 +320,7 @@ that an executable `zip` program is in the user's path.
 
 
   ;;cell-hash test
-  (check-equal? (cell-hash
+  (check-equal? (grid-sheet->cell-label-hash
                  (sheet
                   (list
                    (list (labelled-cell "" "cell1") (cell "") (labelled-cell "" "cell3"))
@@ -270,7 +335,7 @@ that an executable `zip` program is in the user's path.
   
   (check-equal?
    (grid-sheet->sxml (sheet
-                 (list (list (cell 1)) (list (cell 2)))))
+                      (list (list (cell 1)) (list (cell 2)))))
    `(office:spreadsheet
      (table:table
       (table:table-row
