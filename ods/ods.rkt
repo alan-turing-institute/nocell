@@ -42,7 +42,7 @@ that an executable `zip` program is in the user's path.
 ;; Conversion of grid program to sxml-program structure with content and styles.
 
 (struct sxml-program (content styles) #:transparent)
-(struct indexes (row column) #:transparent)
+(struct indices (row column) #:transparent)
 
 ;; grid-program->sxml : program? -> sxml-program?
 (define (grid-program->sxml program)
@@ -56,19 +56,20 @@ that an executable `zip` program is in the user's path.
 
   (define cell-hash (locate-labelled-cells sheet))
 
-  ;; grid-row->sxml : [listof cell?] -> string?
-  (define (grid-row->sxml row)
+  ;; grid-row->sxml : [listof cell?] integer? -> string?
+  (define (grid-row->sxml row i)
     `(table:table-row
-      ,@(map grid-cell->sxml row)))
+      ,@(for/list ([(cell j) (in-indexed row)])
+          (grid-cell->sxml cell (indices i j)))))
 
-  ;; grid-cell->sxml : cell? -> string?
-  (define (grid-cell->sxml cell)
+  ;; grid-cell->sxml : cell? indices? -> string?
+  (define (grid-cell->sxml cell pos)
     (if (nothing? (cell-xpr cell))
         '(table:table-cell)
-        `(table:table-cell ,(grid-expression->sxml-attributes (cell-xpr cell)))))
+        `(table:table-cell ,(grid-expression->sxml-attributes (cell-xpr cell) pos))))
 
-  ;; grid-expression->sxml-attributes : expression? -> string?
-  (define (grid-expression->sxml-attributes xpr)
+  ;; grid-expression->sxml-attributes : expression? indices? -> string?
+  (define (grid-expression->sxml-attributes xpr pos)
     (cond
       [(string? xpr)
        `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
@@ -83,52 +84,83 @@ that an executable `zip` program is in the user's path.
        `(@ (table:formula ,(hash-ref errors xpr)))]
 
       [(reference? xpr)
-       `(@ (table:formula, (get-reference-formula xpr #:cell-hash cell-hash)))]
+       `(@ (table:formula, (get-reference-formula xpr pos #:cell-hash cell-hash)))]
 
       [(application? xpr)
        (error "applications not yet supported")]
     
       [else (error "unrecognised type")]))
 
-  
   `(office:spreadsheet
     (table:table
-     ,@(map grid-row->sxml (sheet-rows sheet)))))
+     ,@(for/list ([(row i) (in-indexed (sheet-rows sheet))])
+         (grid-row->sxml row i)))))
+ 
 
 
 (define errors (make-hash (list (cons 'error:arg "of:=#VALUE!")
                                 (cons 'error:undef "of:=#N/A")
                                 (cons 'error:val "of:=#N/A"))))
 
-;;get-reference-formula : expression? [hash-of label? indexes?]
-(define (get-reference-formula xpr #:cell-hash cell-hash)
+;;get-reference-formula : expression? indices? [hash-of label? indices?]
+(define (get-reference-formula xpr [pos (indices 0 0)] #:cell-hash cell-hash)
   (cond
     [(cell-reference? xpr)
      (let ([loc (cell-reference-loc xpr)])
        (cond
          [(absolute-location? loc)
-          (get-absolute-formula (hash-ref cell-hash (absolute-location-label loc)))]
+          (if (hash-has-key? cell-hash (absolute-location-label loc))
+              (get-absolute-formula (hash-ref cell-hash (absolute-location-label loc)))
+               "of:=#N/A")]
+              
             
-         [(relative-location? loc) (error "relative references not yet supported")]))]
+         [(relative-location? loc)
+          (get-relative-formula (get-referent-indices loc pos #:cell-hash cell-hash))]))]
           
     [(range-reference? xpr) (error "range reference not yet supported")]))
 
-;; get-absolute-formula : pair? -> string?
-(define (get-absolute-formula i)
-  (string-append* (list "=$"
-                        (integer->column-letter (indexes-row i))
-                        "$"
-                        (~a (add1 (indexes-column i))))))
+;; get-absolute-formula : indices? -> string?
+(define (get-absolute-formula pos)
+      (string-append "of:=$"
+                     (integer->column-letter (indices-column pos))
+                     "$"
+                     (~a (add1 (indices-row pos)))))
 
 
-;; locate-labelled-cells : sheet? -> [hash-of label? indexes?]
+;; get-relative-formula : indices? -> string?
+(define (get-relative-formula pos)
+  (if (and (>= (indices-row pos) 0)
+           (>= (indices-column pos) 0))
+      (string-append "of:="
+                     (integer->column-letter (indices-column pos))
+                     (~a (add1 (indices-row pos))))
+      "of:=#N/A"))
+   
+
+;; get-referent-indices : indices? relative-location? hash? -> indices?
+;; Apply relative location offset to current-position
+(define (get-referent-indices location current-position #:cell-hash cell-hash)
+  (define source-indices (hash-ref cell-hash (relative-location-source location)))
+  (define target-indices (hash-ref cell-hash (relative-location-target location)))
+
+  (define offset-row (- (indices-row target-indices) (indices-row source-indices)))
+  (define offset-column (- (indices-column target-indices) (indices-column source-indices)))
+
+  (define referent-row (+ (indices-row current-position) offset-row))
+  (define referent-column (+ (indices-column current-position) offset-column))
+
+  (indices referent-row referent-column))
+
+
+
+;; locate-labelled-cells : sheet? -> [hash-of label? indices?]
 ;; Determine the locations of labelled cells
 (define (locate-labelled-cells sheet)
   (for*/hash ([(row i) (in-indexed (sheet-rows sheet))]
               [(cell j) (in-indexed row)]
               #:when (labelled-cell? cell))
-        (values (labelled-cell-lbl cell)
-                (indexes i j))))
+    (values (labelled-cell-lbl cell)
+            (indices i j))))
 
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -330,18 +362,39 @@ that an executable `zip` program is in the user's path.
                        (list (labelled-cell "" "cell4") (labelled-cell "" "cell5") (cell ""))))))
 
   (check-equal? cell-hash
-                hash("cell1" . #(struct:indexes 0 0))
-                      ("cell3" . #(struct:indexes 0 2))
-                      ("cell4" . #(struct:indexes 1 0))
-                      ("cell5" . #(struct:indexes 1 1)))) 
+                (hash "cell1" (indices 0 0)
+                      "cell3" (indices 0 2)
+                      "cell4" (indices 1 0)
+                      "cell5" (indices 1 1))) 
 
   ;;cell-reference? absolute-location? test
-  (define referent (cell (cell-reference (absolute-location "cell1"))))
+  (define absolute-cell (cell (cell-reference (absolute-location "cell5"))))
 
   (check-equal?
-   (get-reference-formula (cell-xpr referent) #:cell-hash cell-hash)
-   "=$A$1")
+   (get-reference-formula (cell-xpr absolute-cell) #:cell-hash cell-hash)
+   "of:=$B$2")
+   (check-equal?
+    (get-reference-formula (cell-reference (absolute-location "nonexistent"))
+                            #:cell-hash cell-hash)
+   "of:=#N/A")
 
+  (check-equal? (get-absolute-formula (indices 10 5)) "of:=$F$11")
+
+  ;;cell-reference relative-location? test
+  ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2")
+  (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4"))))
+  (check-equal?
+   (get-reference-formula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
+   "of:=C2")
+
+  (check-equal? (get-relative-formula (indices 20 10)) "of:=K21")
+  (check-equal? (get-relative-formula (indices 1 2)) "of:=C2")
+
+  (check-equal? (get-relative-formula (indices 0 -1)) "of:=#N/A")
+  (check-equal? (get-relative-formula (indices -1 0)) "of:=#N/A")
+  (check-equal? (get-relative-formula (indices -1 -1)) "of:=#N/A")
+  (check-equal? (get-relative-formula (indices 0 0)) "of:=A1")
+  
     
   ;;multiple cells test
   (check-equal?
