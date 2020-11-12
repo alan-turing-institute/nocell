@@ -12,7 +12,11 @@ Definition of built in functions
  (contract-out
   (builtin? (-> any/c boolean?))))
 
+(define (->boolean v) (not (not v)))
 
 (define (builtin? v)
-  (or/c 'pi 'e 'neg 'abs 'sgn 'inv 'round 'floor 'ceiling 'truncate 'exp 'ln 'log10 'not '+ '- '* '/
-        'quotient 'remainder 'modulo '= '!= '< '< '<= '>= 'or 'and 'if 'fold/+ 'fold/* 'fold/and 'fold/or))
+  (->boolean
+   (memv v (list 'pi 'e 'neg 'abs 'sgn 'inv 'round 'floor 'ceiling 'truncate
+                 'exp 'ln 'log10 'not '+ '- '* '/ 'quotient 'remainder 'modulo
+                 '= '!= '< '< '<= '>= 'or 'and 'if 'fold/+ 'fold/* 'fold/and
+                 'fold/or))))
