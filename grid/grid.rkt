@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/contract)
+
 (require "builtins.rkt")
 
 #| 
@@ -12,7 +13,10 @@ This module exports structure definitions which define a Grid programme
 |#
 
 (provide
- ;; Predicates for simple types that are not structs
+ (all-from-out "builtins.rkt"))
+
+;; Predicates for simple types that are not structs
+(provide
  label?
  expression?
  value?

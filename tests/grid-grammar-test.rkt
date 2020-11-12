@@ -12,8 +12,7 @@ TODO:
 |#
 
 
-(require "../grid/grid.rkt"
-         "../grid/builtins.rkt")
+(require "../grid/grid.rkt")
 
 (module+ test
   (require rackunit)
