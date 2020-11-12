@@ -3,6 +3,7 @@
 (require sxml
          "./namespaces.rkt"
          "../grid/grid.rkt"
+         "../grid/builtins.rkt"
          "./column-letters.rkt"
          racket/format
          racket/function
@@ -84,10 +85,10 @@ that an executable `zip` program is in the user's path.
        `(@ (table:formula ,(hash-ref errors xpr)))]
 
       [(reference? xpr)
-       `(@ (table:formula, (get-reference-formula xpr pos #:cell-hash cell-hash)))]
+       `(@ (table:formula, (grid-reference->openformula xpr pos #:cell-hash cell-hash)))]
 
       [(application? xpr)
-       (error "applications not yet supported")]
+       `(@ (table:formula, (build-openformula xpr pos #:cell-hash cell-hash)))]
     
       [else (error "unrecognised type")]))
 
@@ -102,8 +103,12 @@ that an executable `zip` program is in the user's path.
                                 (cons 'error:undef "of:=#N/A")
                                 (cons 'error:val "of:=#N/A"))))
 
-;;get-reference-formula : expression? indices? [hash-of label? indices?]
-(define (get-reference-formula xpr [pos (indices 0 0)] #:cell-hash cell-hash)
+
+;; ---------------------------------------------------------------------------------------------------
+;; References
+
+;;grid-reference->openformula : expression? indices? [hash-of label? indices?] -> string?
+(define (grid-reference->openformula xpr [pos (indices 0 0)] #:cell-hash cell-hash)
   (cond
     [(cell-reference? xpr)
      (let ([loc (cell-reference-loc xpr)])
@@ -111,7 +116,7 @@ that an executable `zip` program is in the user's path.
          [(absolute-location? loc)
           (if (hash-has-key? cell-hash (absolute-location-label loc))
               (get-absolute-formula (hash-ref cell-hash (absolute-location-label loc)))
-               "of:=#N/A")]
+              "of:=#N/A")]
               
             
          [(relative-location? loc)
@@ -121,10 +126,10 @@ that an executable `zip` program is in the user's path.
 
 ;; get-absolute-formula : indices? -> string?
 (define (get-absolute-formula pos)
-      (string-append "of:=$"
-                     (integer->column-letter (indices-column pos))
-                     "$"
-                     (~a (add1 (indices-row pos)))))
+  (string-append "of:=$"
+                 (integer->column-letter (indices-column pos))
+                 "$"
+                 (~a (add1 (indices-row pos)))))
 
 
 ;; get-relative-formula : indices? -> string?
@@ -152,7 +157,6 @@ that an executable `zip` program is in the user's path.
   (indices referent-row referent-column))
 
 
-
 ;; locate-labelled-cells : sheet? -> [hash-of label? indices?]
 ;; Determine the locations of labelled cells
 (define (locate-labelled-cells sheet)
@@ -162,6 +166,88 @@ that an executable `zip` program is in the user's path.
     (values (labelled-cell-lbl cell)
             (indices i j))))
 
+;; ---------------------------------------------------------------------------------------------------
+;; Formulas
+
+#|
+temporary notes:
+
+an expression? can be an application?
+an application is defined as:
+(struct application
+    ([fn   builtin?]
+     [args (listof expression?)]))
+
+so is recursive (since an expression can be an application).
+
+'+|-' allow a single value afterwards.
+
+Expression can also be a reference, so this function needs to be able to call the reference functions
+
+builtin? is given in builtins.rkt, as:
+(define (builtin? v)
+  (or/c 'pi 'e 'neg 'abs 'sgn 'inv 'round 'floor 'ceiling 'truncate 'exp 'ln 'log10 'not '+ '- '* '/
+        'quotient 'remainder 'modulo '= '!= '< '< '<= '>= 'or 'and 'if 'fold/+ 'fold/*
+'fold/and 'fold/or))
+
+
+
+
+Task 1: extend grid to allow for +,-,*,/.
+
+
+
+|#
+;;build-openformula : application? indices? [hash-of label? indices?] -> string?
+(define (build-openformula xpr pos #:cell-hash cell-hash)
+
+  ;;grid-application->openformula : application? -> string?
+  (define (grid-application->openformula app)
+
+    (define fn (application-fn app))
+    (if (not (builtin? fn))
+
+        (error (string-append (~a fn) " function not in builtins"))
+      
+        (let ([args (application-args app)])
+          (cond [(= (length args) 1)
+                 (let ([arg (car args)])
+                   (if (ormap (curry eq? fn) '(+ -))
+                       (string-append (~a fn)
+                                      (grid-expression->openformula arg))
+                       (error (string-append (~a fn) " not supported as a unitary operator"))))]
+              
+                [(= (length args) 2)
+                 (if (ormap (curry eq? fn) '(+ - * /))
+                     (string-append (grid-expression->openformula (car args))
+                                    (~a fn)
+                                    (grid-expression->openformula (cadr args)))
+                     (error (string-append (~a fn) " not yet supported")))]
+              
+                [(> (length args) 2)
+                 (error "more than 2 arguments not currently supported")]))))
+
+  ;;parse-formula : expression? -> [listof string?]
+  (define (grid-expression->openformula xpr)
+    (println xpr)
+    (cond
+      [(string? xpr) (error "string types not currently supported in formulae")]
+
+      [(number? xpr) (~a xpr)]
+
+      [(boolean? xpr) (error "boolean types not currently supported in formulae")]
+
+      [(error? xpr) (error "error types not currently supported in formulae")]
+
+      [(reference? xpr) (grid-reference->openformula xpr pos #:cell-hash cell-hash)]
+
+      [(application? xpr) (string-append "(" (grid-application->openformula xpr) ")")]
+    
+      [else (error "unrecognised type")]))
+
+  
+  (string-append "of:="
+                 (grid-application->openformula xpr)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Adding necessary headers to sxml-program for flat ods or extended ods. 
@@ -330,6 +416,14 @@ that an executable `zip` program is in the user's path.
 
   (check-equal?
    (grid-sheet->sxml (sheet
+                      (list (list (cell 'error:arg)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=#VALUE!")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
                       (list (list (cell 'error:undef)))))
    `(office:spreadsheet
      (table:table
@@ -344,13 +438,72 @@ that an executable `zip` program is in the user's path.
       (table:table-row
        (table:table-cell (@ (table:formula "of:=#N/A")))))))
 
-
- 
-
-  #|
   ;; application?
-  (check-equal? (cell->sxml (cell (+ 1 2))) '(table:table-cell (@ (table:formula "of:=1+2"))))
-  |#
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell (application '+ '(10)))))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=+10")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell (application '+ '(10 20)))))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=10+20")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell (application '* '(10 20)))))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=10*20")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell (application '/
+                                                     `(10 ,(application '* '(20 30)))))))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=10/(20*30)")))))))
+
+ ;; see further below for references within applications tests
+  ;; define a cell-hash to test references within applications.
+  (define cell-refs (locate-labelled-cells
+                     (sheet
+                      (list
+                       (list (labelled-cell "1" "cellA1") (labelled-cell "2" "cellB1"))
+                       (list (labelled-cell "3" "cellA2") (labelled-cell "4" "cellB2"))))))
+
+  (check-equal? cell-refs
+                (hash "cellA1" (indices 0 0)
+                      "cellB1" (indices 0 1)
+                      "cellA2" (indices 1 0)
+                      "cellB2" (indices 1 1)))
+    
+
+  ;;references within applications
+  ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2
+  (check-equal?
+   (build-openformula
+    (cell-xpr (application '/
+                           (list
+                            (cell-reference (absolute-location "cellB1"))
+                            (application '*
+                                         (list
+                                          (cell-reference (relative-location "cellA2" "cellA1"))
+                                          30)))))
+              (indices 2 1) ;B3
+              #:cell-hash cell-refs)
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "of:=$B$1/(B2*30)")))))))
 
 
   ;;cell-hash test
@@ -367,15 +520,17 @@ that an executable `zip` program is in the user's path.
                       "cell4" (indices 1 0)
                       "cell5" (indices 1 1))) 
 
+
+  
   ;;cell-reference? absolute-location? test
   (define absolute-cell (cell (cell-reference (absolute-location "cell5"))))
 
   (check-equal?
-   (get-reference-formula (cell-xpr absolute-cell) #:cell-hash cell-hash)
+   (grid-reference->openformula (cell-xpr absolute-cell) #:cell-hash cell-hash)
    "of:=$B$2")
-   (check-equal?
-    (get-reference-formula (cell-reference (absolute-location "nonexistent"))
-                            #:cell-hash cell-hash)
+  (check-equal?
+   (grid-reference->openformula (cell-reference (absolute-location "nonexistent"))
+                                #:cell-hash cell-hash)
    "of:=#N/A")
 
   (check-equal? (get-absolute-formula (indices 10 5)) "of:=$F$11")
@@ -384,18 +539,18 @@ that an executable `zip` program is in the user's path.
   ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2")
   (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4"))))
   (check-equal?
-   (get-reference-formula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
+   (grid-reference->openformula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
    "of:=C2")
 
   (check-equal? (get-relative-formula (indices 20 10)) "of:=K21")
-  (check-equal? (get-relative-formula (indices 1 2)) "of:=C2")
 
   (check-equal? (get-relative-formula (indices 0 -1)) "of:=#N/A")
   (check-equal? (get-relative-formula (indices -1 0)) "of:=#N/A")
   (check-equal? (get-relative-formula (indices -1 -1)) "of:=#N/A")
   (check-equal? (get-relative-formula (indices 0 0)) "of:=A1")
+ 
+
   
-    
   ;;multiple cells test
   (check-equal?
    (grid-sheet->sxml (sheet
