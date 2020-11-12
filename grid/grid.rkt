@@ -22,6 +22,7 @@ This module exports structure definitions which define a Grid programme
  value?
  atomic-value?
  error?
+ nothing?
  matrix-ref)
 
 

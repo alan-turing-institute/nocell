@@ -85,10 +85,12 @@ that an executable `zip` program is in the user's path.
        `(@ (table:formula ,(hash-ref errors xpr)))]
 
       [(reference? xpr)
-       `(@ (table:formula, (grid-reference->openformula xpr pos #:cell-hash cell-hash)))]
+       `(@ (table:formula ,(string-append
+                            "of:="
+                            (grid-reference->openformula xpr pos #:cell-hash cell-hash))))]
 
       [(application? xpr)
-       `(@ (table:formula, (build-openformula xpr pos #:cell-hash cell-hash)))]
+       `(@ (table:formula ,(build-openformula xpr pos #:cell-hash cell-hash)))]
     
       [else (error "unrecognised type")]))
 
@@ -116,7 +118,7 @@ that an executable `zip` program is in the user's path.
          [(absolute-location? loc)
           (if (hash-has-key? cell-hash (absolute-location-label loc))
               (get-absolute-formula (hash-ref cell-hash (absolute-location-label loc)))
-              "of:=#N/A")]
+              "#N/A")]
               
             
          [(relative-location? loc)
@@ -126,7 +128,7 @@ that an executable `zip` program is in the user's path.
 
 ;; get-absolute-formula : indices? -> string?
 (define (get-absolute-formula pos)
-  (string-append "of:=$"
+  (string-append "$"
                  (integer->column-letter (indices-column pos))
                  "$"
                  (~a (add1 (indices-row pos)))))
@@ -136,10 +138,9 @@ that an executable `zip` program is in the user's path.
 (define (get-relative-formula pos)
   (if (and (>= (indices-row pos) 0)
            (>= (indices-column pos) 0))
-      (string-append "of:="
-                     (integer->column-letter (indices-column pos))
+      (string-append (integer->column-letter (indices-column pos))
                      (~a (add1 (indices-row pos))))
-      "of:=#N/A"))
+      "#N/A"))
    
 
 ;; get-referent-indices : indices? relative-location? hash? -> indices?
@@ -169,35 +170,6 @@ that an executable `zip` program is in the user's path.
 ;; ---------------------------------------------------------------------------------------------------
 ;; Formulas
 
-#|
-temporary notes:
-
-an expression? can be an application?
-an application is defined as:
-(struct application
-    ([fn   builtin?]
-     [args (listof expression?)]))
-
-so is recursive (since an expression can be an application).
-
-'+|-' allow a single value afterwards.
-
-Expression can also be a reference, so this function needs to be able to call the reference functions
-
-builtin? is given in builtins.rkt, as:
-(define (builtin? v)
-  (or/c 'pi 'e 'neg 'abs 'sgn 'inv 'round 'floor 'ceiling 'truncate 'exp 'ln 'log10 'not '+ '- '* '/
-        'quotient 'remainder 'modulo '= '!= '< '< '<= '>= 'or 'and 'if 'fold/+ 'fold/*
-'fold/and 'fold/or))
-
-
-
-
-Task 1: extend grid to allow for +,-,*,/.
-
-
-
-|#
 ;;build-openformula : application? indices? [hash-of label? indices?] -> string?
 (define (build-openformula xpr pos #:cell-hash cell-hash)
 
@@ -229,7 +201,6 @@ Task 1: extend grid to allow for +,-,*,/.
 
   ;;parse-formula : expression? -> [listof string?]
   (define (grid-expression->openformula xpr)
-    (println xpr)
     (cond
       [(string? xpr) (error "string types not currently supported in formulae")]
 
@@ -245,7 +216,6 @@ Task 1: extend grid to allow for +,-,*,/.
     
       [else (error "unrecognised type")]))
 
-  
   (string-append "of:="
                  (grid-application->openformula xpr)))
 
@@ -491,19 +461,16 @@ Task 1: extend grid to allow for +,-,*,/.
   ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2
   (check-equal?
    (build-openformula
-    (cell-xpr (application '/
+    (application '/
                            (list
                             (cell-reference (absolute-location "cellB1"))
                             (application '*
                                          (list
                                           (cell-reference (relative-location "cellA2" "cellA1"))
-                                          30)))))
+                                          30))))
               (indices 2 1) ;B3
               #:cell-hash cell-refs)
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "of:=$B$1/(B2*30)")))))))
+   "of:=$B$1/(B2*30)")
 
 
   ;;cell-hash test
@@ -527,27 +494,27 @@ Task 1: extend grid to allow for +,-,*,/.
 
   (check-equal?
    (grid-reference->openformula (cell-xpr absolute-cell) #:cell-hash cell-hash)
-   "of:=$B$2")
+   "$B$2")
   (check-equal?
    (grid-reference->openformula (cell-reference (absolute-location "nonexistent"))
                                 #:cell-hash cell-hash)
-   "of:=#N/A")
+   "#N/A")
 
-  (check-equal? (get-absolute-formula (indices 10 5)) "of:=$F$11")
+  (check-equal? (get-absolute-formula (indices 10 5)) "$F$11")
 
   ;;cell-reference relative-location? test
   ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2")
   (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4"))))
   (check-equal?
    (grid-reference->openformula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
-   "of:=C2")
+   "C2")
 
-  (check-equal? (get-relative-formula (indices 20 10)) "of:=K21")
+  (check-equal? (get-relative-formula (indices 20 10)) "K21")
 
-  (check-equal? (get-relative-formula (indices 0 -1)) "of:=#N/A")
-  (check-equal? (get-relative-formula (indices -1 0)) "of:=#N/A")
-  (check-equal? (get-relative-formula (indices -1 -1)) "of:=#N/A")
-  (check-equal? (get-relative-formula (indices 0 0)) "of:=A1")
+  (check-equal? (get-relative-formula (indices 0 -1)) "#N/A")
+  (check-equal? (get-relative-formula (indices -1 0)) "#N/A")
+  (check-equal? (get-relative-formula (indices -1 -1)) "#N/A")
+  (check-equal? (get-relative-formula (indices 0 0)) "A1")
  
 
   
