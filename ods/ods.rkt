@@ -109,20 +109,25 @@ that an executable `zip` program is in the user's path.
 
 ;;grid-reference->openformula : expression? indices? [hash-of label? indices?] -> string?
 (define (grid-reference->openformula xpr [pos (indices 0 0)] #:cell-hash cell-hash)
-  (cond
-    [(cell-reference? xpr)
-     (let ([loc (cell-reference-loc xpr)])
-       (cond
-         [(absolute-location? loc)
-          (if (hash-has-key? cell-hash (absolute-location-label loc))
-              (get-absolute-formula (hash-ref cell-hash (absolute-location-label loc)))
-              "#N/A")]
-              
-            
-         [(relative-location? loc)
-          (get-relative-formula (get-referent-indices loc pos #:cell-hash cell-hash))]))]
-          
-    [(range-reference? xpr) (error "range reference not yet supported")]))
+
+
+  ;;resolve-location : location? -> string?
+  (define (resolve-location loc)
+    (cond
+      [(absolute-location? loc)
+       (if (hash-has-key? cell-hash (absolute-location-label loc))
+           (get-absolute-formula (hash-ref cell-hash (absolute-location-label loc)))
+           "#N/A")]
+      
+      [(relative-location? loc)
+       (get-relative-formula (get-referent-indices loc pos #:cell-hash cell-hash))]))
+
+    (cond
+      [(cell-reference? xpr) (resolve-location (cell-reference-loc xpr))]
+      [(range-reference? xpr)
+       (string-append (resolve-location (range-reference-tl xpr))
+                      ":"
+                      (resolve-location (range-reference-br xpr)))]))
 
 ;; get-absolute-formula : indices? -> string?
 (define (get-absolute-formula pos)
@@ -440,7 +445,7 @@ that an executable `zip` program is in the user's path.
       (table:table-row
        (table:table-cell (@ (table:formula "10/(20*30)")))))))
 
- ;; see further below for references within applications tests
+  ;; see further below for references within applications tests
   ;; define a cell-hash to test references within applications.
   (define cell-refs (locate-labelled-cells
                      (sheet
@@ -460,14 +465,14 @@ that an executable `zip` program is in the user's path.
   (check-equal?
    (build-openformula
     (application '/
-                           (list
-                            (cell-reference (absolute-location "cellB1"))
-                            (application '*
-                                         (list
-                                          (cell-reference (relative-location "cellA2" "cellA1"))
-                                          30))))
-              (indices 2 1) ;B3
-              #:cell-hash cell-refs)
+                 (list
+                  (cell-reference (absolute-location "cellB1"))
+                  (application '*
+                               (list
+                                (cell-reference (relative-location "cellA2" "cellA1"))
+                                30))))
+    (indices 2 1) ;B3
+    #:cell-hash cell-refs)
    "$B$1/(B2*30)")
 
 
@@ -513,8 +518,13 @@ that an executable `zip` program is in the user's path.
   (check-equal? (get-relative-formula (indices -1 0)) "#N/A")
   (check-equal? (get-relative-formula (indices -1 -1)) "#N/A")
   (check-equal? (get-relative-formula (indices 0 0)) "A1")
- 
 
+  ;;range-reference?
+  (check-equal?
+   (grid-reference->openformula
+    (range-reference (absolute-location "cell1") (absolute-location "cell3"))
+    #:cell-hash cell-hash)
+   "$A$1:$C$1")
   
   ;;multiple cells test
   (check-equal?
