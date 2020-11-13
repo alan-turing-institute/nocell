@@ -12,3 +12,8 @@
 (let ([bubbly-sxml (grid-program->sxml bubbly)])
   (sxml->ods bubbly-sxml #:filename "bubbly-flat" #:type "flat")
   (sxml->ods bubbly-sxml #:filename "bubbly-extended" #:type "extended"))
+
+
+(let ([budget-sxml (grid-program->sxml budget)])
+  (sxml->ods budget-sxml #:filename "budget-flat" #:type "f")
+  (sxml->ods budget-sxml #:filename "budget-extended" #:type "e"))

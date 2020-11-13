@@ -10,7 +10,8 @@ Some larger examples of Grid
 (require "../grid/grid.rkt")
 
 (provide multiplication-table
-         bubbly)
+         bubbly
+         budget)
 
 
 ;; A spreadsheet of numbers
@@ -71,3 +72,42 @@ Some larger examples of Grid
 
 (define bubbly
   (program (list (sheet bubbled-rows))))
+
+
+;; a simple household budget
+
+(define labels (list "Income" "Rent" "Energy" "Water" "Council Tax"))
+(define inputs (list 1800 700 100 20 100))
+
+(define (zip-labelled-columns l1 l2)
+  (map (lambda(r1 r2)
+         (list (cell r1) (labelled-cell r2 r1)))
+       l1 l2))
+
+(define (ref-cell lab)
+  (cell-reference (absolute-location lab)))
+  
+(define (sum-labelled-cells lst)
+  (if (= (length lst) 2)
+      (application '+ (map ref-cell lst))
+      (application '+ (list
+                       (ref-cell (car lst))
+                       (sum-labelled-cells (cdr lst))))))
+
+(define budget
+  (program
+   (list (sheet
+          (append
+           (zip-labelled-columns labels inputs)
+           (list
+            (list (cell "Total known costs") (labelled-cell
+                                              (sum-labelled-cells (cdr labels))
+                                              "Total"))
+            (list (cell "Spending budget") (cell
+                                            (application '-
+                                                         (list
+                                                          (ref-cell "Income")
+                                                          (ref-cell "Total")))))))))))
+                  
+                  
+
