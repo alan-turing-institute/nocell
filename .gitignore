@@ -8,4 +8,8 @@
 /scribblings/scribble-style.css
 /scribblings/scribble.css
 /scribblings/*~
-*~
+*~*
+*.dep
+*.zo
+*compiled*
+.DS_Store

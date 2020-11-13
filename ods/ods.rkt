@@ -85,9 +85,7 @@ that an executable `zip` program is in the user's path.
        `(@ (table:formula ,(hash-ref errors xpr)))]
 
       [(reference? xpr)
-       `(@ (table:formula ,(string-append
-                            "of:="
-                            (grid-reference->openformula xpr pos #:cell-hash cell-hash))))]
+       `(@ (table:formula ,(grid-reference->openformula xpr pos #:cell-hash cell-hash)))]
 
       [(application? xpr)
        `(@ (table:formula ,(build-openformula xpr pos #:cell-hash cell-hash)))]
@@ -101,9 +99,9 @@ that an executable `zip` program is in the user's path.
  
 
 
-(define errors (make-hash (list (cons 'error:arg "of:=#VALUE!")
-                                (cons 'error:undef "of:=#N/A")
-                                (cons 'error:val "of:=#N/A"))))
+(define errors (make-hash (list (cons 'error:arg "#VALUE!")
+                                (cons 'error:undef "#N/A")
+                                (cons 'error:val "#N/A"))))
 
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -216,8 +214,7 @@ that an executable `zip` program is in the user's path.
     
       [else (error "unrecognised type")]))
 
-  (string-append "of:="
-                 (grid-application->openformula xpr)))
+  (grid-application->openformula xpr))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Adding necessary headers to sxml-program for flat ods or extended ods. 
@@ -270,10 +267,10 @@ that an executable `zip` program is in the user's path.
                    #:filename [filename "flat_ods"]
                    #:type [type "flat"])
   (cond
-    [(ormap (curry = type) '("flat" "fods" "f"))
+    [(ormap (curry eq? type) '("flat" "fods" "f"))
      (sxml->flat-ods sxml-program filename)]
 
-    [(ormap (curry = type) '("extended" "ods" "e"))
+    [(ormap (curry eq? type) '("extended" "ods" "e"))
      (sxml->extended-ods sxml-program filename)]
       
     [else (error "unrecognised type")]))
@@ -304,7 +301,8 @@ that an executable `zip` program is in the user's path.
   
 
 
-;; -------------------------------- TESTS ----------------------
+;; ---------------------------------------------------------------------------------------------------
+;; TESTS
 
 (module+ test
   (require rackunit)
@@ -382,7 +380,7 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "of:=#VALUE!")))))))
+       (table:table-cell (@ (table:formula "#VALUE!")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -390,7 +388,7 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "of:=#VALUE!")))))))
+       (table:table-cell (@ (table:formula "#VALUE!")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -398,7 +396,7 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "of:=#N/A")))))))
+       (table:table-cell (@ (table:formula "#N/A")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -406,7 +404,7 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "of:=#N/A")))))))
+       (table:table-cell (@ (table:formula "#N/A")))))))
 
   ;; application?
   (check-equal?
@@ -415,7 +413,7 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "of:=+10")))))))
+       (table:table-cell (@ (table:formula "+10")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -423,7 +421,7 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "of:=10+20")))))))
+       (table:table-cell (@ (table:formula "10+20")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -431,7 +429,7 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "of:=10*20")))))))
+       (table:table-cell (@ (table:formula "10*20")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -440,7 +438,7 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "of:=10/(20*30)")))))))
+       (table:table-cell (@ (table:formula "10/(20*30)")))))))
 
  ;; see further below for references within applications tests
   ;; define a cell-hash to test references within applications.
@@ -470,7 +468,7 @@ that an executable `zip` program is in the user's path.
                                           30))))
               (indices 2 1) ;B3
               #:cell-hash cell-refs)
-   "of:=$B$1/(B2*30)")
+   "$B$1/(B2*30)")
 
 
   ;;cell-hash test
