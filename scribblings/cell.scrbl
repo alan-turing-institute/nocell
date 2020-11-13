@@ -106,19 +106,22 @@ terminology. Suppose we have an array of shape @math{[s_1 s_2 s_3 ... s_n]}. A
 @deftech{partition} of an array is a decomposition of its shape into two shapes:
 @math{[s_1 ... s_i]} and @math{[s@subscript{i+1} ... s_n]}. The first shape is
 called (by Slepak @italic{et al@._}) a @deftech{frame} and the second shape is
-called a @{cell}. (Note that there are @math{n+1} ways to decompose an array
-into frame and cell.)
+called a @deftech{cell}. The sum of the ranks of the frame and of the cell is
+therefore the rank of the original array. (Note that there are @math{n+1} ways
+to decompose an array into frame and cell.)
 
-To apply a function that requires an argument of a particular shape, we
-decompose its actual argument so that the cell of the decomposition is of the
-required shape. @margin-note*{TODO: I don't know what is supposed to happen if
-the function is already polymorphic in the @italic{rank} of its argument, so
-that there are multiple possible decompositions. Maybe this is not allowed? What
-about matrix product?} Then we map the function over the frame, applying it to
-each individual cell. The shape of the result has a frame that is the same as
-the original frame, and a cell that is determined by the result of the function.
+To apply a function that requires an argument of a particular rank, we decompose
+its actual argument so that the cell of the decomposition is of the required
+rank. @margin-note*{TODO: Note that the decomposition is by rank, not by
+shape. That is, functions that operate on rank-1 arrays must operate on rank-1
+arrays of any length, and so on.} Then we map the function over the frame,
+applying it to each individual cell. The result has a frame that is the same as
+the original frame, and a cell whose shape is determined by the result of the
+function.
 
-
+Remora's rank polymorphism is slightly more general when a function is applied
+to multiple arguments. First, it is required that the shape of every argument is
+a prefix of the the argument of greatest rank. Then the other arguments are     
 
 
 
