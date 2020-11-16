@@ -83,11 +83,8 @@ This module exports structure definitions which define a Grid programme
 (define (nothing? v)
   (eq? v 'nothing))
 
-(define (error? v)
-  (memv v (list 'error:arg
-                'error:undef
-                'error:val)))  
-
+(define error? 
+  (or/c 'error:arg 'error:undef 'error:val))
 
 ;; --- References
 
