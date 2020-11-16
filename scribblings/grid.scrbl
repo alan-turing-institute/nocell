@@ -4,7 +4,7 @@
 @require[scribble/core
          scribble/decode]
 @require[
-  @for-label[racket/base]
+  @for-label[@except-in[racket/base date? date date-month date-day date-year struct:date]]
   @for-label["../grid/grid.rkt"]]
 
 @title{The Grid Language}
@@ -161,7 +161,7 @@ language, the function is not an expression).
               @defproc[(error? [v any/c]) boolean?]
               @defstruct*[date ([year exact-nonnegative-integer?]
                                 [month (integer-in 1 12)]
-                                [day (integer-in 1 31)]) #:transparent]{
+                                [day (integer-in 1 31)]) #:transparent])]{
 
               An atomic value is the `final' value of a cell.}
 
