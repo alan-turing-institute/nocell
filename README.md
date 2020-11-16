@@ -2,6 +2,10 @@
 
 A language for spreadsheets
 
+![Tests](https://github.com/alan-turing-institute/nocell/workflows/Run%20tests/badge.svg)
+
+
+
 ## Design
 
 - [See the wiki for plan and design](https://github.com/alan-turing-institute/nocell/wiki)

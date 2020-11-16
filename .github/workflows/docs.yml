@@ -15,7 +15,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Build scribble
+      - name: install racket
         uses: Bogdanp/setup-racket@v0.10
         with:
           distribution: 'full'
