@@ -21,4 +21,4 @@ jobs:
         run: raco pkg install --auto
 
       - name: run tests
-        run: raco test
+        run: raco test .
