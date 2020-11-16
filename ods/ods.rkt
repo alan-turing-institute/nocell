@@ -35,6 +35,9 @@ that an executable `zip` program is in the user's path.
   [sxml->ods (->* (sxml-program?)
                   (#:filename string? #:type string?)
                   any)]
+  [sxml->ods-bytes (->* (sxml-program?)
+                        (#:type string?)
+                        bytes?)]
   [grid-program->sxml (-> program? sxml-program?)]))                   
 
 
@@ -122,12 +125,12 @@ that an executable `zip` program is in the user's path.
       [(relative-location? loc)
        (get-relative-formula (get-referent-indices loc pos #:cell-hash cell-hash))]))
 
-    (cond
-      [(cell-reference? xpr) (resolve-location (cell-reference-loc xpr))]
-      [(range-reference? xpr)
-       (string-append (resolve-location (range-reference-tl xpr))
-                      ":"
-                      (resolve-location (range-reference-br xpr)))]))
+  (cond
+    [(cell-reference? xpr) (resolve-location (cell-reference-loc xpr))]
+    [(range-reference? xpr)
+     (string-append (resolve-location (range-reference-tl xpr))
+                    ":"
+                    (resolve-location (range-reference-br xpr)))]))
 
 ;; get-absolute-formula : indices? -> string?
 (define (get-absolute-formula pos)
@@ -267,7 +270,8 @@ that an executable `zip` program is in the user's path.
 ;; Serialisation - convert sxml-program to flat or extended ods. Uses filesystem commands.
 ;; WARNING: uses (system zip) because Racket file/zip 
 ;; doesn't support leaving the first file in the archive uncompressed.
-  
+
+;;sxml->ods : sxml-program? string? string? -> void?
 (define (sxml->ods sxml-program
                    #:filename [filename "flat_ods"]
                    #:type [type "flat"])
@@ -280,11 +284,10 @@ that an executable `zip` program is in the user's path.
       
     [else (error "unrecognised type")]))
 
-;;sxml->flat-ods : sxml-program? string? -> xml
+;;sxml->flat-ods : sxml-program? string? -> void?
 (define (sxml->flat-ods sxml-program filename)
   (call-with-output-file (string-append filename ".xml") #:exists 'replace
     (lambda (out) (srl:sxml->xml (flat-sxml sxml-program) out))))
-
 
 (define (sxml->extended-ods sxml-program filename)
   ;;save temporary files
@@ -303,4 +306,292 @@ that an executable `zip` program is in the user's path.
 
   ;; Remove temporary files
   (map delete-file filelist))
+
+;;--------------------
+;; RETURN BYTES
+
+;;sxml->ods-bytes : sxml-program? -> bytes? 
+(define (sxml->ods-bytes sxml-program
+                         #:type [type "flat"])
+  (cond
+    [(ormap (curry eq? type) '("flat" "fods" "f"))
+     (sxml->flat-ods-bytes sxml-program)]
+
+    [(ormap (curry eq? type) '("extended" "ods" "e"))
+     (sxml->extended-ods-bytes sxml-program)]
+      
+    [else (error "unrecognised type")]))
+
+;;sxml->flat-ods-bytes : sxml-program? -> bytes?
+(define (sxml->flat-ods-bytes sxml-program)
+  (let ([op1 (open-output-bytes)])
+    (srl:sxml->xml (flat-sxml sxml-program) op1)
+    (get-output-bytes op1)))
+
+;;sxml->extended-ods-bytes : sxml-program? -> bytes?
+(define (sxml->extended-ods-bytes sxml-program)
+
+  (define (add-to-tmp fn) (path->string (build-path tmp fn)))
   
+  ;;save temporary files
+  (define tmp (make-temporary-file "nocelltmp~a" 'directory))
+  (define meta (add-to-tmp "META-INF"))
+  (make-directory meta)
+
+  (define filelist (map add-to-tmp
+                        (list "mimetype" "content.xml" "styles.xml" "META-INF/manifest.xml")))
+
+  
+  (for ([fn filelist]
+        [xml (extended-sxml sxml-program)])
+    (call-with-output-file fn
+      (lambda (out) (srl:sxml->xml xml out))))
+  
+  ;;zip.
+  (define ods (add-to-tmp "tmp.ods"))
+  (system (string-join (list "zip -0 -X" ods (first filelist)) " "))
+  (for ([fn (rest filelist)])
+    (system (string-join (list "zip -r" ods fn) " ")))
+
+  ;; re-read as bytes
+  (define bytefile (file->bytes ods))
+
+  ;; Clean up
+  (map delete-file (append filelist (list ods)))
+  (map delete-directory (list meta tmp))
+
+  bytefile)
+   
+
+
+;; ---------------------------------------------------------------------------------------------------
+;; TESTS
+
+(module+ test
+  (require rackunit)
+
+  ;; Atomic values, number? string? boolean? error? nothing?
+
+  ;; number?
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 1)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
+  
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 42.0)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "float") (office:value "42.0")))))))
+ 
+
+  ;; string?
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell "")))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "string") (office:string-value "")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell "hello")))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "string") (office:string-value "hello")))))))
+
+  
+  ;; boolean?
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell #t)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "boolean") (office:boolean-value "true")))))))
+
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell #f)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "boolean") (office:boolean-value "false")))))))
+
+   
+  ;; nothing?
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'nothing)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell)))))
+
+  ;; error?
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'error:arg)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "#VALUE!")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'error:arg)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "#VALUE!")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'error:undef)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "#N/A")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 'error:val)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "#N/A")))))))
+
+  ;; application?
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell (application '+ '(10)))))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "+10")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell (application '+ '(10 20)))))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "10+20")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell (application '* '(10 20)))))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "10*20")))))))
+
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell (application '/
+                                                     `(10 ,(application '* '(20 30)))))))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (table:formula "10/(20*30)")))))))
+
+  ;; see further below for references within applications tests
+  ;; define a cell-hash to test references within applications.
+  (define cell-refs (locate-labelled-cells
+                     (sheet
+                      (list
+                       (list (labelled-cell "1" "cellA1") (labelled-cell "2" "cellB1"))
+                       (list (labelled-cell "3" "cellA2") (labelled-cell "4" "cellB2"))))))
+
+  (check-equal? cell-refs
+                (hash "cellA1" (indices 0 0)
+                      "cellB1" (indices 0 1)
+                      "cellA2" (indices 1 0)
+                      "cellB2" (indices 1 1)))
+    
+
+  ;;references within applications
+  ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2
+  (check-equal?
+   (build-openformula
+    (application '/
+                 (list
+                  (cell-reference (absolute-location "cellB1"))
+                  (application '*
+                               (list
+                                (cell-reference (relative-location "cellA2" "cellA1"))
+                                30))))
+    (indices 2 1) ;B3
+    #:cell-hash cell-refs)
+   "$B$1/(B2*30)")
+
+
+  ;;cell-hash test
+  ;;use below cell-hash in cell-reference? tests.
+  (define cell-hash (locate-labelled-cells
+                     (sheet
+                      (list
+                       (list (labelled-cell "" "cell1") (cell "") (labelled-cell "" "cell3"))
+                       (list (labelled-cell "" "cell4") (labelled-cell "" "cell5") (cell ""))))))
+
+  (check-equal? cell-hash
+                (hash "cell1" (indices 0 0)
+                      "cell3" (indices 0 2)
+                      "cell4" (indices 1 0)
+                      "cell5" (indices 1 1))) 
+
+
+  
+  ;;cell-reference? absolute-location? test
+  (define absolute-cell (cell (cell-reference (absolute-location "cell5"))))
+
+  (check-equal?
+   (grid-reference->openformula (cell-xpr absolute-cell) #:cell-hash cell-hash)
+   "$B$2")
+  (check-equal?
+   (grid-reference->openformula (cell-reference (absolute-location "nonexistent"))
+                                #:cell-hash cell-hash)
+   "#N/A")
+
+  (check-equal? (get-absolute-formula (indices 10 5)) "$F$11")
+
+  ;;cell-reference relative-location? test
+  ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2")
+  (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4"))))
+  (check-equal?
+   (grid-reference->openformula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
+   "C2")
+
+  (check-equal? (get-relative-formula (indices 20 10)) "K21")
+
+  (check-equal? (get-relative-formula (indices 0 -1)) "#N/A")
+  (check-equal? (get-relative-formula (indices -1 0)) "#N/A")
+  (check-equal? (get-relative-formula (indices -1 -1)) "#N/A")
+  (check-equal? (get-relative-formula (indices 0 0)) "A1")
+
+  ;;range-reference?
+  (check-equal?
+   (grid-reference->openformula
+    (range-reference (absolute-location "cell1") (absolute-location "cell3"))
+    #:cell-hash cell-hash)
+   "$A$1:$C$1")
+  
+  ;;multiple cells test
+  (check-equal?
+   (grid-sheet->sxml (sheet
+                      (list (list (cell 1)) (list (cell 2)))))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell (@ (office:value-type "float") (office:value "1"))))
+      (table:table-row
+       (table:table-cell (@ (office:value-type "float") (office:value "2")))))))
+  ) 
