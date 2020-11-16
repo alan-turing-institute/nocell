@@ -2,7 +2,7 @@
 
 A language for spreadsheets
 
-![Tests](https://github.com/alan-turing-institute/nocell/workflows/Run%20test/badge.svg)
+![Tests](https://github.com/alan-turing-institute/nocell/workflows/Run%20tests/badge.svg)
 
 
 
