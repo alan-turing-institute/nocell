@@ -49,6 +49,38 @@ This module exports structure definitions which define a Grid programme
 (define label? string?)
 
 
+;; --- References
+
+(struct reference
+  ()
+  #:transparent)
+(struct cell-reference reference
+  (loc)
+  #:transparent)
+(struct range-reference reference
+  (tl br)
+  #:transparent)
+
+(struct location
+  ()
+  #:transparent)
+(struct absolute-location location
+  (label)
+  #:transparent)
+(struct relative-location location
+  (source target)
+  #:transparent)
+
+(provide
+ (contract-out
+  (struct reference ())
+  (struct (cell-reference reference) ([loc location?]))
+  (struct (range-reference reference) ([tl location?] [br location?]))
+  (struct location ())
+  (struct (absolute-location location) ([label string?]))
+  (struct (relative-location location) ([source string?] [target string?]))))
+
+
 ;; -- Expressions and values
 
 (struct application (fn args) #:transparent)
@@ -92,38 +124,6 @@ This module exports structure definitions which define a Grid programme
   (or/c
    value?   
    application?))
-
-
-;; --- References
-
-(struct reference
-  ()
-  #:transparent)
-(struct cell-reference reference
-  (loc)
-  #:transparent)
-(struct range-reference reference
-  (tl br)
-  #:transparent)
-
-(struct location
-  ()
-  #:transparent)
-(struct absolute-location location
-  (label)
-  #:transparent)
-(struct relative-location location
-  (source target)
-  #:transparent)
-
-(provide
- (contract-out
-  (struct reference ())
-  (struct (cell-reference reference) ([loc location?]))
-  (struct (range-reference reference) ([tl location?] [br location?]))
-  (struct location ())
-  (struct (absolute-location location) ([label string?]))
-  (struct (relative-location location) ([source string?] [target string?]))))
 
 
 ;; ---------------------------------------------------------------------------------------------------
