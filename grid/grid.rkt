@@ -48,46 +48,6 @@ This module exports structure definitions which define a Grid programme
 (define label? string?)
 
 
-;; -- Expressions and values
-
-(struct application (fn args) #:transparent)
-(struct matrix (rows) #:transparent)
-
-(provide
- (contract-out
-  (struct application
-    ([fn   builtin?]
-     [args (listof expression?)]))
-  (struct matrix
-    ([rows (vectorof (vectorof atomic-value? #:flat? #t) #:flat? #t)]))))
-
-(define (expression? v)
-  (or
-   (value? v)
-   (application? v)))
-
-(define (value? v)
-  (or
-   (atomic-value? v)
-   (matrix? v)
-   (reference? v)))
-
-(define (atomic-value? v)
-  (or
-   (number? v)
-   (string? v)
-   (boolean? v)
-   (error? v)
-   (nothing? v)))
-
-(define (nothing? v)
-  (eq? v 'nothing))
-
-(define (error? v)
-  (memv v (list 'error:arg
-                'error:undef
-                'error:val)))  
-
 
 ;; --- References
 
@@ -121,6 +81,45 @@ This module exports structure definitions which define a Grid programme
   (struct (relative-location location) ([source string?] [target string?]))))
 
 
+;; -- Expressions and values
+
+(struct application (fn args) #:transparent)
+(struct matrix (rows) #:transparent)
+
+(provide
+ (contract-out
+  (struct application
+    ([fn   builtin?]
+     [args (listof expression?)]))
+  (struct matrix
+    ([rows (vectorof (vectorof atomic-value? #:flat? #t) #:flat? #t)]))))
+
+(define (nothing? v)
+  (eq? v 'nothing))
+
+(define error?
+  (or/c 'error:arg
+        'error:undef
+        'error:val))
+
+(define atomic-value?
+  (or/c
+   number?
+   string?
+   boolean?
+   error?
+   nothing?))
+
+(define value?
+  (or/c
+   atomic-value?
+   matrix?
+   reference?))
+
+(define expression?
+  (or/c
+   value?   
+   application?))
 
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -131,6 +130,5 @@ This module exports structure definitions which define a Grid programme
   (vector-ref
    (vector-ref (matrix-rows m) row)
    col))
-
 
 

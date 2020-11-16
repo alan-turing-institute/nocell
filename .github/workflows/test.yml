@@ -1,0 +1,24 @@
+name: Run tests
+on: [push]
+
+jobs:
+  install-run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2.3.1
+        with:
+          persist-credentials: false
+
+      - name: install racket
+        uses: Bogdanp/setup-racket@v0.10
+        with:
+          distribution: 'full'
+          variant: 'regular'
+          version: '7.8'
+      
+      - name: install nocell
+        run: raco pkg install --auto
+
+      - name: run tests
+        run: raco test .
