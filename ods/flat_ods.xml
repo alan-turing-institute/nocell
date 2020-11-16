@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" office:version="1.2" office:mimetype="application/vnd.oasis.opendocument.spreadsheet">
+  <office:body>
+    <office:spreadsheet>
+      <table:table xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0">
+        <table:table-row>
+          <table:table-cell office:value="1" office:value-type="float" />
+          <table:table-cell office:value="1" office:value-type="float" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value="2" office:value-type="float" />
+          <table:table-cell office:value="2" office:value-type="float" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value="3" office:value-type="float" />
+          <table:table-cell office:value="6" office:value-type="float" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value="4" office:value-type="float" />
+          <table:table-cell office:value="24" office:value-type="float" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value="5" office:value-type="float" />
+          <table:table-cell office:value="120" office:value-type="float" />
+        </table:table-row>
+      </table:table>
+    </office:spreadsheet>
+  </office:body>
+</office:document>

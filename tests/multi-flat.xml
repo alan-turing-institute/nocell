@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" office:version="1.3" office:mimetype="application/vnd.oasis.opendocument.spreadsheet">
+  <office:body>
+    <office:spreadsheet>
+      <table:table xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0">
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="1" />
+          <table:table-cell office:value-type="float" office:value="2" />
+          <table:table-cell office:value-type="float" office:value="3" />
+          <table:table-cell office:value-type="float" office:value="4" />
+          <table:table-cell office:value-type="float" office:value="5" />
+          <table:table-cell office:value-type="float" office:value="6" />
+          <table:table-cell office:value-type="float" office:value="7" />
+          <table:table-cell office:value-type="float" office:value="8" />
+          <table:table-cell office:value-type="float" office:value="9" />
+          <table:table-cell office:value-type="float" office:value="10" />
+          <table:table-cell office:value-type="float" office:value="11" />
+          <table:table-cell office:value-type="float" office:value="12" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="2" />
+          <table:table-cell office:value-type="float" office:value="4" />
+          <table:table-cell office:value-type="float" office:value="6" />
+          <table:table-cell office:value-type="float" office:value="8" />
+          <table:table-cell office:value-type="float" office:value="10" />
+          <table:table-cell office:value-type="float" office:value="12" />
+          <table:table-cell office:value-type="float" office:value="14" />
+          <table:table-cell office:value-type="float" office:value="16" />
+          <table:table-cell office:value-type="float" office:value="18" />
+          <table:table-cell office:value-type="float" office:value="20" />
+          <table:table-cell office:value-type="float" office:value="22" />
+          <table:table-cell office:value-type="float" office:value="24" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="3" />
+          <table:table-cell office:value-type="float" office:value="6" />
+          <table:table-cell office:value-type="float" office:value="9" />
+          <table:table-cell office:value-type="float" office:value="12" />
+          <table:table-cell office:value-type="float" office:value="15" />
+          <table:table-cell office:value-type="float" office:value="18" />
+          <table:table-cell office:value-type="float" office:value="21" />
+          <table:table-cell office:value-type="float" office:value="24" />
+          <table:table-cell office:value-type="float" office:value="27" />
+          <table:table-cell office:value-type="float" office:value="30" />
+          <table:table-cell office:value-type="float" office:value="33" />
+          <table:table-cell office:value-type="float" office:value="36" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="4" />
+          <table:table-cell office:value-type="float" office:value="8" />
+          <table:table-cell office:value-type="float" office:value="12" />
+          <table:table-cell office:value-type="float" office:value="16" />
+          <table:table-cell office:value-type="float" office:value="20" />
+          <table:table-cell office:value-type="float" office:value="24" />
+          <table:table-cell office:value-type="float" office:value="28" />
+          <table:table-cell office:value-type="float" office:value="32" />
+          <table:table-cell office:value-type="float" office:value="36" />
+          <table:table-cell office:value-type="float" office:value="40" />
+          <table:table-cell office:value-type="float" office:value="44" />
+          <table:table-cell office:value-type="float" office:value="48" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="5" />
+          <table:table-cell office:value-type="float" office:value="10" />
+          <table:table-cell office:value-type="float" office:value="15" />
+          <table:table-cell office:value-type="float" office:value="20" />
+          <table:table-cell office:value-type="float" office:value="25" />
+          <table:table-cell office:value-type="float" office:value="30" />
+          <table:table-cell office:value-type="float" office:value="35" />
+          <table:table-cell office:value-type="float" office:value="40" />
+          <table:table-cell office:value-type="float" office:value="45" />
+          <table:table-cell office:value-type="float" office:value="50" />
+          <table:table-cell office:value-type="float" office:value="55" />
+          <table:table-cell office:value-type="float" office:value="60" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="6" />
+          <table:table-cell office:value-type="float" office:value="12" />
+          <table:table-cell office:value-type="float" office:value="18" />
+          <table:table-cell office:value-type="float" office:value="24" />
+          <table:table-cell office:value-type="float" office:value="30" />
+          <table:table-cell office:value-type="float" office:value="36" />
+          <table:table-cell office:value-type="float" office:value="42" />
+          <table:table-cell office:value-type="float" office:value="48" />
+          <table:table-cell office:value-type="float" office:value="54" />
+          <table:table-cell office:value-type="float" office:value="60" />
+          <table:table-cell office:value-type="float" office:value="66" />
+          <table:table-cell office:value-type="float" office:value="72" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="7" />
+          <table:table-cell office:value-type="float" office:value="14" />
+          <table:table-cell office:value-type="float" office:value="21" />
+          <table:table-cell office:value-type="float" office:value="28" />
+          <table:table-cell office:value-type="float" office:value="35" />
+          <table:table-cell office:value-type="float" office:value="42" />
+          <table:table-cell office:value-type="float" office:value="49" />
+          <table:table-cell office:value-type="float" office:value="56" />
+          <table:table-cell office:value-type="float" office:value="63" />
+          <table:table-cell office:value-type="float" office:value="70" />
+          <table:table-cell office:value-type="float" office:value="77" />
+          <table:table-cell office:value-type="float" office:value="84" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="8" />
+          <table:table-cell office:value-type="float" office:value="16" />
+          <table:table-cell office:value-type="float" office:value="24" />
+          <table:table-cell office:value-type="float" office:value="32" />
+          <table:table-cell office:value-type="float" office:value="40" />
+          <table:table-cell office:value-type="float" office:value="48" />
+          <table:table-cell office:value-type="float" office:value="56" />
+          <table:table-cell office:value-type="float" office:value="64" />
+          <table:table-cell office:value-type="float" office:value="72" />
+          <table:table-cell office:value-type="float" office:value="80" />
+          <table:table-cell office:value-type="float" office:value="88" />
+          <table:table-cell office:value-type="float" office:value="96" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="9" />
+          <table:table-cell office:value-type="float" office:value="18" />
+          <table:table-cell office:value-type="float" office:value="27" />
+          <table:table-cell office:value-type="float" office:value="36" />
+          <table:table-cell office:value-type="float" office:value="45" />
+          <table:table-cell office:value-type="float" office:value="54" />
+          <table:table-cell office:value-type="float" office:value="63" />
+          <table:table-cell office:value-type="float" office:value="72" />
+          <table:table-cell office:value-type="float" office:value="81" />
+          <table:table-cell office:value-type="float" office:value="90" />
+          <table:table-cell office:value-type="float" office:value="99" />
+          <table:table-cell office:value-type="float" office:value="108" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="10" />
+          <table:table-cell office:value-type="float" office:value="20" />
+          <table:table-cell office:value-type="float" office:value="30" />
+          <table:table-cell office:value-type="float" office:value="40" />
+          <table:table-cell office:value-type="float" office:value="50" />
+          <table:table-cell office:value-type="float" office:value="60" />
+          <table:table-cell office:value-type="float" office:value="70" />
+          <table:table-cell office:value-type="float" office:value="80" />
+          <table:table-cell office:value-type="float" office:value="90" />
+          <table:table-cell office:value-type="float" office:value="100" />
+          <table:table-cell office:value-type="float" office:value="110" />
+          <table:table-cell office:value-type="float" office:value="120" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="11" />
+          <table:table-cell office:value-type="float" office:value="22" />
+          <table:table-cell office:value-type="float" office:value="33" />
+          <table:table-cell office:value-type="float" office:value="44" />
+          <table:table-cell office:value-type="float" office:value="55" />
+          <table:table-cell office:value-type="float" office:value="66" />
+          <table:table-cell office:value-type="float" office:value="77" />
+          <table:table-cell office:value-type="float" office:value="88" />
+          <table:table-cell office:value-type="float" office:value="99" />
+          <table:table-cell office:value-type="float" office:value="110" />
+          <table:table-cell office:value-type="float" office:value="121" />
+          <table:table-cell office:value-type="float" office:value="132" />
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type="float" office:value="12" />
+          <table:table-cell office:value-type="float" office:value="24" />
+          <table:table-cell office:value-type="float" office:value="36" />
+          <table:table-cell office:value-type="float" office:value="48" />
+          <table:table-cell office:value-type="float" office:value="60" />
+          <table:table-cell office:value-type="float" office:value="72" />
+          <table:table-cell office:value-type="float" office:value="84" />
+          <table:table-cell office:value-type="float" office:value="96" />
+          <table:table-cell office:value-type="float" office:value="108" />
+          <table:table-cell office:value-type="float" office:value="120" />
+          <table:table-cell office:value-type="float" office:value="132" />
+          <table:table-cell office:value-type="float" office:value="144" />
+        </table:table-row>
+      </table:table>
+    </office:spreadsheet>
+  </office:body>
+  <office:styles>
+    <style:style xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" />
+  </office:styles>
+</office:document>
