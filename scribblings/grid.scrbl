@@ -158,7 +158,10 @@ language, the function is not an expression).
 
 @deftogether[(@defproc[(atomic-value? [v any/c]) boolean?]
               @defproc[(nothing? [v any/c]) boolean?]
-              @defproc[(error? [v any/c]) boolean?])]{
+              @defproc[(error? [v any/c]) boolean?]
+              @defstruct*[date ([year exact-nonnegative-integer?]
+                                [month (integer-in 1 12)]
+                                [day (integer-in 1 31)]) #:transparent]{
 
               An atomic value is the `final' value of a cell.}
 
@@ -184,12 +187,13 @@ language, the function is not an expression).
 
               References refer to other cells.}
 
-An @deftech{atomic value} is a number, a string, a boolean, an error, or
-`nothing.' (It may be worthwhile thinking about adding other types -- for
-example, dates.) The special value @racket['nothing] represents an empty
-cell. Any cells which exist in the final spreadsheet but which were not
-specified in the Grid programme (for example, cells to the right of or below
-those specified) implicitly contain the value @racket['nothing].
+An @deftech{atomic value} is a number, a string, a boolean, a date, an error, or
+`nothing.' A date is simply a year, a month, and a day. No attempt is made to
+ensure that a particular day of the month exists. The special value
+@racket['nothing] represents an empty cell. Any cells which exist in the final
+spreadsheet but which were not specified in the Grid programme (for example,
+cells to the right of or below those specified) implicitly contain the value
+@racket['nothing].
 
 We also allow `errors' as atomic values. At the moment we have three kinds of
 error: one to indicate that an argument to a built-in function was the wrong
