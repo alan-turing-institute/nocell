@@ -1,6 +1,5 @@
 #lang scribble/manual
 
-
 @require[scribble/bnf]
 @require[scribble/core
          scribble/decode]
