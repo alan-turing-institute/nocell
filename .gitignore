@@ -15,3 +15,6 @@
 .DS_Store
 *.ods
 *.xml
+*.html
+*.css
+*.js
