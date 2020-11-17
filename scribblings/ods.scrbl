@@ -6,7 +6,7 @@
 
 @defmodule["../ods/ods.rkt"]{The @racketmodname[ods/ods.rkt] library
 provides utilities to create spreadsheet files from a @exec{grid} @racket[program].
-Currently the library supports @bold{fods} (only opens in LibreOffice) and @bold{ods}
+Currently the library supports @bold{fods} (opens in LibreOffice) and @bold{ods}
 format (opens in both LibreOffice and Excel).
 Conversion of sexp to xml is implemented by @racket[SXML].}
 
