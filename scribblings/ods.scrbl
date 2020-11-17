@@ -19,10 +19,10 @@ Produces a bytes string (see also @racket[bytes?]) that corresponds to a single 
  @racket[type] is one of "f", "fods" or "flat", and a zipped folder if
  @racket[type] is one of "e", "extended", or "ods".
 
-  @margin-note{The ods files produced are zipped folder with a .ods extension, containing with four files. 
+@margin-note{An ods file is a zipped folder with a .ods extension, containing with four files. 
   First, there is an uncompressed "mimetype" file. Then there are three compressed files: 
- "content.xml", "styles.xml", and "META-INF/manifest.xml". The fods files essentially have the
- mimetype, content, and styles files wrapped into a single xml file.}
+ "content.xml", "styles.xml", and "META-INF/manifest.xml". A fods file essentially contains the
+ mimetype, content, and styles information wrapped into a single xml file.}
 
  Serialization from sexp to xml is achieved using @racket[srl:sxml->xml].
 
@@ -39,5 +39,4 @@ Translates a grid @racket[program] into @racket[SXML].
 
 Like @racket[write-bytes], but also takes a filename.
  The provided filename should have an extension that matches the spreadsheet format of
- @racket[bstr] (".xml" for fods, ".ods" for ods). Currently there are no checks are made to ensure
- this is the case.
+ @racket[bstr] (".xml" for fods, ".ods" for ods). 
