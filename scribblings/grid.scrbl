@@ -11,7 +11,8 @@
 @author["James Geddes" "Oliver Strickson" "Callum Mole"]
 
 @section{Structure}
-@defmodule["../grid/grid.rkt"]{The @racketmodname[grid/grid.rkt] library
+
+@defmodule[nocell/grid]{The @racketmodname[grid/grid.rkt] library
 defines the Grid language.}
 
 Grid is a language for describing spreadsheets, although to call it a
