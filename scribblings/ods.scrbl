@@ -32,7 +32,7 @@ Produces a bytes string (see also @racket[bytes?]) that corresponds to a single 
 @defproc[(grid-program->sxml [program program?])
                   sxml-program?]
 
-Translates a grid @racket[program] into @racket[SXML].
+Translates a @racketmodname[grid] program into @racketmodname[sxml].
 
 @defproc[(bytes->file [bstr bytes?] [fn string?])
                   exact-nonnegative-integer?]
