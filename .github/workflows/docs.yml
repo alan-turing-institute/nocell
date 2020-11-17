@@ -26,7 +26,7 @@ jobs:
       - name: Install Nocell
         run: raco pkg install --auto
 
-      - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/grid.scrbl
+      - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/docs.scrbl
         
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@3.7.1
