@@ -37,7 +37,7 @@ that an executable `zip` program is in the user's path.
 (provide
  (contract-out
   [sxml->ods (->* (sxml-program?)
-                  (#:type string?)
+                  (#:type (or/c "f" "fods" "flat" "e" "extended" "ods"))
                   bytes?)]
   [grid-program->sxml (-> program? sxml-program?)]
   [bytes->file (-> bytes? string? exact-nonnegative-integer?)]))          
