@@ -6,7 +6,7 @@
 
 @defmodule["../ods/ods.rkt"]{The @racketmodname[ods/ods.rkt] library
 provides utilities to create spreadsheet files from a @exec{grid} @racket[program].
-Currently the library supports @exec{fods} (only opens in LibreOffice) and @exec{ods}
+Currently the library supports @bold{fods} (only opens in LibreOffice) and @bold{ods}
 format (opens in both LibreOffice and Excel).
 Conversion of sexp to xml is implemented by @racket[SXML].}
 
@@ -18,6 +18,11 @@ Conversion of sexp to xml is implemented by @racket[SXML].}
 Produces a bytes string (see also @racket[bytes?]) that corresponds to a single xml file if
  @racket[type] is one of "f", "fods" or "flat", and a zipped folder if
  @racket[type] is one of "e", "extended", or "ods".
+
+  @margin-note{The ods files produced are zipped folder with a .ods extension, containing with four files. 
+  First, there is an uncompressed "mimetype" file. Then there are three compressed files: 
+ "content.xml", "styles.xml", and "META-INF/manifest.xml". The fods files essentially have the
+ mimetype, content, and styles files wrapped into a single xml file.}
 
  Serialization from sexp to xml is achieved using @racket[srl:sxml->xml].
 
