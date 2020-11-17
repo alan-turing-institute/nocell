@@ -3,7 +3,7 @@
 @title{Nocell Documentation}
 @author["James Geddes" "Oliver Strickson" "Callum Mole"]
 
-Nocell is a language for building probabilistic models that output to a spreadsheet.
+Nocell is a language for building probabilistic models that output to spreadsheets.
 
 You can see the source code at 
 @(let ([url "https://github.com/alan-turing-institute/nocell"])
