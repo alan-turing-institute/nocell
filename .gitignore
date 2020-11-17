@@ -13,3 +13,5 @@
 *.zo
 *compiled*
 .DS_Store
+*.ods
+*.xml

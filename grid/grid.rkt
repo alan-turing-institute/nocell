@@ -16,6 +16,7 @@ This module exports structure definitions which define a Grid programme
  (all-from-out "builtins.rkt"))
 
 ;; Predicates for simple types that are not structs
+
 (provide
  label?
  expression?
@@ -46,7 +47,6 @@ This module exports structure definitions which define a Grid programme
      [lbl string?]))))
 
 (define label? string?)
-
 
 
 ;; --- References
@@ -85,6 +85,7 @@ This module exports structure definitions which define a Grid programme
 
 (struct application (fn args) #:transparent)
 (struct matrix (rows) #:transparent)
+(struct date (year month day) #:transparent) 
 
 (provide
  (contract-out
@@ -92,7 +93,9 @@ This module exports structure definitions which define a Grid programme
     ([fn   builtin?]
      [args (listof expression?)]))
   (struct matrix
-    ([rows (vectorof (vectorof atomic-value? #:flat? #t) #:flat? #t)]))))
+    ([rows (vectorof (vectorof atomic-value? #:flat? #t) #:flat? #t)]))
+  (struct date
+    ([year exact-nonnegative-integer?] [month (integer-in 1 12)] [day (integer-in 1 31)]))))
 
 (define (nothing? v)
   (eq? v 'nothing))
@@ -107,6 +110,7 @@ This module exports structure definitions which define a Grid programme
    number?
    string?
    boolean?
+   date?
    error?
    nothing?))
 
