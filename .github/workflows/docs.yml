@@ -29,7 +29,7 @@ jobs:
       - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/grid.scrbl
         
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@3.6.1
+        uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
