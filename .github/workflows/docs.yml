@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - feature/50
     paths:
       - 'scribblings/**'
 
@@ -21,7 +22,7 @@ jobs:
           distribution: 'full'
           variant: 'regular'
           version: '7.8'
-
+          
       - name: Install Nocell
         run: raco pkg install --auto
 
