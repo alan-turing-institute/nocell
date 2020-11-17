@@ -23,8 +23,12 @@ that an executable `zip` program is in the user's path.
 
 1. Interface
 2. Conversion of grid program to sxml-program structure with content and styles.
-3. Adding necessary headers to sxml-program for flat ods or extended ods. 
-4. Serialisation - convert sxml-program to flat or extended ods (includes zipping).
+3. References.
+4. Formulas.
+5. Adding necessary headers to sxml-program for flat ods or extended ods. 
+6. Serialisation - convert sxml-program to flat or extended ods (includes zipping).
+7. Tests.
+
 |#
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -33,12 +37,10 @@ that an executable `zip` program is in the user's path.
 (provide
  (contract-out
   [sxml->ods (->* (sxml-program?)
-                  (#:filename string? #:type string?)
-                  any)]
-  [sxml->ods-bytes (->* (sxml-program?)
-                        (#:type string?)
-                        bytes?)]
-  [grid-program->sxml (-> program? sxml-program?)]))                   
+                  (#:type string?)
+                  bytes?)]
+  [grid-program->sxml (-> program? sxml-program?)]
+  [bytes->file (-> bytes? string? exact-nonnegative-integer?)]))          
 
 
 
@@ -267,52 +269,13 @@ that an executable `zip` program is in the user's path.
             (@ (manifest:full-path "styles.xml") (manifest:media-type "text/xml"))))))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Serialisation - convert sxml-program to flat or extended ods. Uses filesystem commands.
+;; Serialisation - convert sxml-program to flat or extended ods byte string. Uses filesystem commands.
 ;; WARNING: uses (system zip) because Racket file/zip 
 ;; doesn't support leaving the first file in the archive uncompressed.
 
-;;sxml->ods : sxml-program? string? string? -> void?
-(define (sxml->ods sxml-program
-                   #:filename [filename "flat_ods"]
-                   #:type [type "flat"])
-  (cond
-    [(ormap (curry eq? type) '("flat" "fods" "f"))
-     (sxml->flat-ods sxml-program filename)]
-
-    [(ormap (curry eq? type) '("extended" "ods" "e"))
-     (sxml->extended-ods sxml-program filename)]
-      
-    [else (error "unrecognised type")]))
-
-;;sxml->flat-ods : sxml-program? string? -> void?
-(define (sxml->flat-ods sxml-program filename)
-  (call-with-output-file (string-append filename ".xml") #:exists 'replace
-    (lambda (out) (srl:sxml->xml (flat-sxml sxml-program) out))))
-
-(define (sxml->extended-ods sxml-program filename)
-  ;;save temporary files
-  (make-directory* "META-INF") 
-  (define filelist (list "mimetype" "content.xml" "styles.xml" "META-INF/manifest.xml"))
-  (for ([fn filelist]
-        [xml (extended-sxml sxml-program)])
-    (call-with-output-file fn #:exists 'replace
-      (lambda (out) (srl:sxml->xml xml out))))
-  
-  ;;zip.
-  (define odsfolder (string-append "\"" filename ".ods\""))
-  (system (string-join (list "zip -0 -X" odsfolder (first filelist)) " "))
-  (for ([fn (rest filelist)])
-    (system (string-join (list "zip -r" odsfolder fn) " ")))
-
-  ;; Remove temporary files
-  (map delete-file filelist))
-
-;;--------------------
-;; RETURN BYTES
-
 ;;sxml->ods-bytes : sxml-program? -> bytes? 
-(define (sxml->ods-bytes sxml-program
-                         #:type [type "flat"])
+(define (sxml->ods sxml-program
+                   #:type [type "flat"])
   (cond
     [(ormap (curry eq? type) '("flat" "fods" "f"))
      (sxml->flat-ods-bytes sxml-program)]
@@ -338,30 +301,38 @@ that an executable `zip` program is in the user's path.
   (define meta (add-to-tmp "META-INF"))
   (make-directory meta)
 
-  (define filelist (map add-to-tmp
-                        (list "mimetype" "content.xml" "styles.xml" "META-INF/manifest.xml")))
+  (define filelist (list "mimetype" "content.xml" "styles.xml" "META-INF/manifest.xml"))
 
-  
   (for ([fn filelist]
         [xml (extended-sxml sxml-program)])
-    (call-with-output-file fn
+    (call-with-output-file (add-to-tmp fn)
       (lambda (out) (srl:sxml->xml xml out))))
   
   ;;zip.
-  (define ods (add-to-tmp "tmp.ods"))
+  (define curdir (current-directory))
+  (current-directory tmp)
+
+  (define ods "tmp.ods")
+  
   (system (string-join (list "zip -0 -X" ods (first filelist)) " "))
   (for ([fn (rest filelist)])
     (system (string-join (list "zip -r" ods fn) " ")))
 
   ;; re-read as bytes
-  (define bytefile (file->bytes ods))
+  (define bytefile (file->bytes ods #:mode 'binary))
 
   ;; Clean up
-  (map delete-file (append filelist (list ods)))
+  (map (lambda(x) (delete-file (add-to-tmp x))) (append filelist (list ods)))
   (map delete-directory (list meta tmp))
+  (current-directory curdir)
 
   bytefile)
-   
+
+;;bytes->file : bytes? string? -> exact-nonnegative-integer?
+; writes bytes to file. File extension supplied by user.
+(define (bytes->file bstr fn)
+  (call-with-output-file fn #:exists 'replace
+    (lambda (out) (write-bytes bstr out))))
 
 
 ;; ---------------------------------------------------------------------------------------------------
