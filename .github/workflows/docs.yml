@@ -22,8 +22,11 @@ jobs:
           variant: 'regular'
           version: '7.8'
 
-      - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/grid.scrbl
+      - name: Install Nocell
+        run: raco pkg install --auto
 
+      - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/grid.scrbl
+        
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@3.6.1
         with:
