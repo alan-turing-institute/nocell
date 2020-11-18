@@ -152,7 +152,7 @@ Arguments should be implicitly "promoted" in the following way:
         '(and ; logical AND
           or  ; logical OR
           ))
-   (map (λ (f) (make-ternary-function f 'boolean? 'value? 'value? 'boolean?))
+   (map (λ (f) (make-ternary-function f 'boolean? 'value? 'value? 'value?))
         '(if  ; IF expression 
           ))
    ))
