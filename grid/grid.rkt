@@ -18,13 +18,13 @@ This module exports structure definitions which define a Grid programme
 ;; Predicates for simple types that are not structs
 
 (provide
- label?
  expression?
  value?
  atomic-value?
  error?
  nothing?
- matrix-ref)
+ matrix-ref
+ builtin?)
 
 
 ;; --- Programs, sheets, and cells
@@ -45,9 +45,6 @@ This module exports structure definitions which define a Grid programme
   (struct labelled-cell
     ([xpr expression?]
      [lbl string?]))))
-
-(define label? string?)
-
 
 ;; --- References
 
@@ -90,7 +87,7 @@ This module exports structure definitions which define a Grid programme
 (provide
  (contract-out
   (struct application
-    ([fn   builtin?]
+    ([fn  builtin?]
      [args (listof expression?)]))
   (struct matrix
     ([rows (vectorof (vectorof atomic-value? #:flat? #t) #:flat? #t)]))
@@ -125,6 +122,11 @@ This module exports structure definitions which define a Grid programme
    value?   
    application?))
 
+;; Check builtins.
+(define (builtin? v)
+  (hash-has-key? builtins v))
+  
+
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Utility functions
@@ -134,5 +136,3 @@ This module exports structure definitions which define a Grid programme
   (vector-ref
    (vector-ref (matrix-rows m) row)
    col))
-
-
