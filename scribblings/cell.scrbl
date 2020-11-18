@@ -134,7 +134,7 @@ replicating its cell as necessary. Then the polymorphism proceeds as before.
 
 
 
-@subection{Higher order functions}
+@subsection{Higher order functions}
 
 
 
