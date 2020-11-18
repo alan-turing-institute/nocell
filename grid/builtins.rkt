@@ -4,10 +4,10 @@
 
 Declarations of built in-functions
 
-Built-in functions are define by their name, an arity, and the type of each
+Built-in functions are defined by their name, an arity, and the type of each
 argument.
 
-Arguments are implicitly "promoted" in the following way:
+Arguments should be implicitly "promoted" in the following way:
 
 1. If the function requires an atomic-value? and it is given a cell reference,
    then the value of the cell referred to is used as the argument. 
@@ -23,14 +23,22 @@ Arguments are implicitly "promoted" in the following way:
 
 (require racket/contract)
 
-(provide builtins
-         builtin-arg-type?
-         builtin-type)
+(provide
+ (contract-out
+  ;; Types of arguments to, and return values from, a builtin
+  [builtin-arg-type? (-> any/c boolean?)]
+  ;; The type of a builtin 
+  [struct builtin-type
+    ((arity     (or/c #f exact-nonnegative-integer?))
+     (arg-types (or/c builtin-arg-type? (listof builtin-arg-type?)))
+     (ret-type   builtin-arg-type?))]
+  ;; Hashmap of builtin symbols and their types
+  [builtins (hash/c symbol? builtin-type? #:immutable #t)]))
 
-;; A structure to hold information about each built-in.
-;; The arity should be an integer or #f.
-;; If the arity is an integer, then arg-types should be a list of
-;; builtin-arg-type?. If the arity is #f the arg-types should be a single
+;; builtin-type : A structure to hold information about each built-in.
+;; `arity` should be an integer or #f.
+;; If `arity` is an integer, then `arg-types` should be a list of
+;; builtin-arg-type?. If `arity` is #f then `arg-types` should be a single
 ;; builtin-arg-type? and the function may take any number of arguments of that
 ;; type (but at least one).
 (struct builtin-type (arity arg-types ret-type) #:transparent)
@@ -225,7 +233,6 @@ Infix Operator Range (":").
  FV 6.12.20 
  HLOOKUP 6.14.5 
  HOUR 6.10.10 
- IF 6.15.4 
 
  INDEX 6.14.6 
  INT 6.17.2 
