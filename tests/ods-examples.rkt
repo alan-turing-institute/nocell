@@ -5,28 +5,28 @@
 
 (let ([multi-table-sxml (grid-program->sxml multiplication-table)])
 
-  (let ([fods-bytes (sxml->ods multi-table-sxml #:type "fods")])
+  (let ([fods-bytes (sxml->ods multi-table-sxml #:type 'fods)])
     (bytes->file fods-bytes "multi-flat-bytes.xml"))
   
-  (let ([ods-bytes (sxml->ods multi-table-sxml #:type "ods")])    
+  (let ([ods-bytes (sxml->ods multi-table-sxml #:type 'ods)])    
     (bytes->file ods-bytes "multi-extended-bytes.ods")))
 
 
 (let ([bubbly-sxml (grid-program->sxml bubbly)])
   
-  (let ([fods-bytes (sxml->ods bubbly-sxml #:type "fods")])
+  (let ([fods-bytes (sxml->ods bubbly-sxml #:type 'fods)])
     (bytes->file fods-bytes "bubbly-flat-bytes.xml"))
   
-  (let ([ods-bytes (sxml->ods bubbly-sxml #:type "ods")])
+  (let ([ods-bytes (sxml->ods bubbly-sxml #:type 'ods)])
     (bytes->file ods-bytes "bubbly-extended-bytes.ods")))
 
 
 (let ([budget-sxml (grid-program->sxml budget
                                        #:blank-rows-before '(2 0 0 0 1 0 1)
                                        #:blank-cols-before '(0 0 5))])
-   (let ([fods-bytes (sxml->ods budget-sxml #:type "fods")])
+   (let ([fods-bytes (sxml->ods budget-sxml #:type 'fods)])
     (bytes->file fods-bytes "budget-flat-bytes.xml"))
   
-  (let ([ods-bytes (sxml->ods budget-sxml #:type "ods")])
+  (let ([ods-bytes (sxml->ods budget-sxml #:type 'ods)])
     (bytes->file ods-bytes "budget-extended-bytes.ods")))
 

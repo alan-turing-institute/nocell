@@ -39,7 +39,7 @@ that an executable `zip` program is in the user's path.
 (provide
  (contract-out
   [sxml->ods (->* (sxml-program?)
-                  (#:type (or/c "f" "fods" "flat" "e" "extended" "ods"))
+                  (#:type (or/c 'ods 'fods))
                   bytes?)]
   [grid-program->sxml (->* (program?)
                            (#:blank-rows-before (listof integer?)
@@ -475,13 +475,11 @@ that an executable `zip` program is in the user's path.
 
 ;;sxml->ods-bytes : sxml-program? -> bytes? 
 (define (sxml->ods sxml-program
-                   #:type [type "flat"])
+                   #:type [type 'fods])
   (cond
-    [(ormap (curry eq? type) '("flat" "fods" "f"))
-     (sxml->flat-ods-bytes sxml-program)]
+    [(eq? type 'fods) (sxml->flat-ods-bytes sxml-program)]
 
-    [(ormap (curry eq? type) '("extended" "ods" "e"))
-     (sxml->extended-ods-bytes sxml-program)]
+    [(eq? type 'ods) (sxml->extended-ods-bytes sxml-program)]
       
     [else (raise-user-error "unrecognised type")]))
 
