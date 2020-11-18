@@ -221,8 +221,17 @@ that an executable `zip` program is in the user's path.
         ['neg (string-append "-" (grid-expression->openformula (car args)))]
         ['abs (format-unary-str "ABS" (car args))]
         ['sgn (format-unary-str "SIGN" (car args))]
-        
-        
+        ['inv (format-unary-str "MINVERSE" (car args))]
+        ['floor (format-unary-str "FLOOR" (car args))]
+        ['ceiling (format-unary-str "CEILING" (car args))]
+        ['truncate (format-unary-str "TRUNC" (car args))]
+        ;;binary comparison
+        ['> (format-binary fn args)]
+        ['< (format-binary fn args)]
+        ['>= (format-binary fn args)]
+        ['<= (format-binary fn args)]
+        ['= (format-binary fn args)]
+        ['!= (format-unary-str "NOT" (format-binary '= args))]
         
         [else (raise-user-error string-append (~a fn) " not yet supported")])))
     
@@ -230,7 +239,7 @@ that an executable `zip` program is in the user's path.
   ;;grid-expression->openformula : expression? -> string?
   (define (grid-expression->openformula xpr)
     (cond
-      [(string? xpr) (raise-user-error "string types not currently supported in formulae")]
+      [(string? xpr) xpr]
 
       [(number? xpr) (~a xpr)]
 
@@ -445,7 +454,13 @@ that an executable `zip` program is in the user's path.
       (cons '/ "3/2")
       (cons 'quotient "QUOTIENT(3,2)")
       (cons 'remainder "MOD(3,2)*SIGN(3)")
-      (cons 'modulo "MOD(3,2)")))
+      (cons 'modulo "MOD(3,2)")
+      (cons '> "3>2")
+      (cons '< "3<2")
+      (cons '>= "3>=2")
+      (cons '<= "3<=2")
+      (cons '= "3=2")
+      (cons '!= "NOT(3=2)")))
 
   (test-case
    "Binary Functions"
@@ -458,7 +473,13 @@ that an executable `zip` program is in the user's path.
     (list
       (cons 'neg "-4")
       (cons 'abs "ABS(4)")
-      (cons 'sgn "SIGN(4)")))
+      (cons 'sgn "SIGN(4)")
+      (cons 'inv "MINVERSE(4)")
+      (cons 'floor "FLOOR(4)")
+      (cons 'ceiling "CEILING(4)")
+      (cons 'truncate "TRUNC(4)")
+
+      ))
 
   (test-case
    "Unary Functions"
