@@ -4,15 +4,20 @@
 @require[scribble/core
          scribble/decode]
 @require[
-  @for-label[@except-in[racket/base date? date date-month date-day date-year struct:date]]
-  @for-label["../grid/grid.rkt"]]
+  @for-label[@except-in[racket/base date? date date-month date-day date-year struct:date]]]
+
+
+@(require (for-label nocell/grid/grid
+                     nocell/grid/builtins))
 
 @title{The Grid Language}
 @author["James Geddes" "Oliver Strickson" "Callum Mole"]
 
 @section{Structure}
-@defmodule["../grid/grid.rkt"]{The @racketmodname[grid/grid.rkt] library
-defines the Grid language.}
+
+@defmodule[nocell/grid/grid]
+
+The @racketmodname[nocell/grid/grid] library defines the Grid language.
 
 Grid is a language for describing spreadsheets, although to call it a
 ``language'' is perhaps overblown. It is perhaps best thought of as ``assembly

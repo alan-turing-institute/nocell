@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+
     paths:
       - 'scribblings/**'
 
@@ -21,13 +22,16 @@ jobs:
           distribution: 'full'
           variant: 'regular'
           version: '7.8'
+          
+      - name: Install Nocell
+        run: raco pkg install --auto
 
-      - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/grid.scrbl
-
+      - run: raco scribble --htmls --dest doc --redirect-main https://docs.racket-lang.org +m scribblings/docs.scrbl
+        
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@3.6.1
+        uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
-          FOLDER: doc/grid
+          FOLDER: doc/docs
           CLEAN: true
