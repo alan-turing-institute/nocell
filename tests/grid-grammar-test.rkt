@@ -17,12 +17,6 @@ TODO:
 (module+ test
   (require rackunit)
   
-  (test-case
-      "Grid labels"
-    (check-true (label? "a"))
-    (check-false (label? 'a))
-    (check-false (label? 1)))
-
   (define avs
     (list 42.0 "foo" #t #f 'error:arg 'error:val 'error:undef 'nothing))
 

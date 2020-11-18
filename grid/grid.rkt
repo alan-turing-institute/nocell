@@ -18,7 +18,6 @@ This module exports structure definitions which define a Grid programme
 ;; Predicates for simple types that are not structs
 
 (provide
- label?
  expression?
  value?
  atomic-value?
@@ -46,9 +45,6 @@ This module exports structure definitions which define a Grid programme
   (struct labelled-cell
     ([xpr expression?]
      [lbl string?]))))
-
-(define label? string?)
-
 
 ;; --- References
 
