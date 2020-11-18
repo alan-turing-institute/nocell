@@ -237,7 +237,19 @@ that an executable `zip` program is in the user's path.
         ['<= (format-binary fn args)]
         ['= (format-binary fn args)]
         ['!= (format-unary-str "NOT" (format-binary '= args))]
-        
+         ;; unary trig
+        ['exp (format-unary-str "EXP" (car args))]
+        ['ln (format-unary-str "LN" (car args))]
+        ['sqrt (format-unary-str "SQRT" (car args))]
+        ['acos (format-unary-str "ACOS" (car args))]
+        ['asin (format-unary-str "ASIN" (car args))]
+        ['atan (format-unary-str "ATAN" (car args))]
+        ['cos (format-unary-str "COS" (car args))]
+        ['sin (format-unary-str "SIN" (car args))]
+        ['tan (format-unary-str "TAN" (car args))]
+        ;;binary trig
+        ['expt (format-binary '^ args)]
+        ['log (format-binary-str "LOG" (reverse args))]
         [else (raise-user-error string-append (~a fn) " not yet supported")])))
     
 
@@ -489,7 +501,9 @@ that an executable `zip` program is in the user's path.
       (cons '>= "3>=2")
       (cons '<= "3<=2")
       (cons '= "3=2")
-      (cons '!= "NOT(3=2)")))
+      (cons '!= "NOT(3=2)")
+      (cons 'expt "3^2")
+      (cons 'log "LOG(2,3)")))
 
   (test-case
    "Binary Functions"
@@ -507,7 +521,15 @@ that an executable `zip` program is in the user's path.
       (cons 'floor "FLOOR(4)")
       (cons 'ceiling "CEILING(4)")
       (cons 'truncate "TRUNC(4)")
-
+      (cons 'exp "EXP(4)")
+      (cons 'ln "LN(4)")
+      (cons 'sqrt "SQRT(4)")
+      (cons 'acos "ACOS(4)")
+      (cons 'asin "ASIN(4)")
+      (cons 'atan "ATAN(4)")
+      (cons 'cos "COS(4)")
+      (cons 'sin "SIN(4)")
+      (cons 'tan "TAN(4)")
       ))
 
   (test-case
