@@ -21,7 +21,7 @@ Some larger examples of Grid
    (list (sheet 
           (for/list ([i 12])
             (for/list ([j 12])
-              (cell (* (+ i 1) (+ j 1)))))))))
+              (cell (* (+ i 1) (+ j 1)) '())))))))
 
 ;; A row-by-row bubble sort
 
@@ -56,11 +56,12 @@ Some larger examples of Grid
   (bubble-one '("Geddes" "Strickson" "Mole" "Counsell" "MacKay") '() '()))
 
 (define (label-cell-with-row-index index c)
-  (labelled-cell c (format "~a-~a" c index)))
+  (labelled-cell c '() (format "~a-~a" c index)))
 
 (define (label-and-ref-cell-with-row-index index c)
   (labelled-cell
    (cell-reference (absolute-location (format "~a-~a" c (- index 1))))
+   '()
    (format "~a-~a" c index)))
 
 (define bubbled-rows
@@ -76,8 +77,13 @@ Some larger examples of Grid
 
 ;; a simple household budget
 
-(define labels (list "Rent" "Energy" "Water" "Council Tax"))
-(define inputs (list 700 100 20 100))
+(define labels (list "Income" "Rent" "Energy" "Water" "Council Tax"))
+(define inputs (list 1800 700 100 20 100))
+
+(define (zip-labelled-columns l1 l2)
+  (map (lambda (r1 r2)
+         (list (cell r1 '()) (labelled-cell r2 '() r1)))
+       l1 l2))
 
 (define (ref-cell lab)
   (cell-reference (absolute-location lab)))
@@ -85,20 +91,18 @@ Some larger examples of Grid
 (define budget
   (program
    (list (sheet
-          (list
-           (list (cell "Rent") (labelled-cell 700 "Rent"))
-           (list (cell "Energy") (labelled-cell 100 "Energy") (labelled-cell (application '+ (list (ref-cell "Rent") (ref-cell "Energy"))) "cumsum1"))
-           (list (cell "Water") (labelled-cell 20 "Water") (labelled-cell (application '+ (list (ref-cell "Water") (ref-cell "cumsum1"))) "cumsum2"))
-           (list (cell "Council Tax") (labelled-cell 100 "Council Tax") (labelled-cell (application '+ (list (ref-cell "Council Tax") (ref-cell "cumsum2"))) "cumsum3"))
-            (list (cell "Total known costs") (labelled-cell
-                                              (application '= (list (cell-reference (absolute-location "cumsum3"))))
-                                              "Total"))
-           (list (cell "Income") (labelled-cell 1800 "Income"))
-           (list (cell "Spending budget") (cell
-                                            (application '-
-                                                         (list
-                                                          (cell-reference (absolute-location "Income"))
-                                                          (cell-reference (absolute-location "Total")))))))))))
-                  
-                  
-
+          (append
+           (zip-labelled-columns labels inputs)
+           (list
+            (list (cell "Total known costs" '())
+                  (labelled-cell
+                   (sum-labelled-cells (cdr labels))
+                   '()
+                   "Total"))
+            (list (cell "Spending budget" '())
+                  (cell
+                   (application '-
+                                (list
+                                 (ref-cell "Income")
+                                 (ref-cell "Total")))
+                   '()))))))))
