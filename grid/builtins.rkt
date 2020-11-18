@@ -162,6 +162,19 @@ Arguments should be implicitly "promoted" in the following way:
 ;; ---------------------------------------------------------------------------------------------------
 ;; Date fuctions
 
+(define *date*
+  (list
+   ;; date : year month day -> date?
+   (make-ternary-function 'date 'numeric? 'numeric? 'numeric? 'date?)
+
+   ;; date-day, date-month, and date-year : extract relevant component
+   (make-unary-function 'date-day 'date? 'numeric?)
+   (make-unary-function 'date-month 'date? 'numeric?)
+   (make-unary-function 'date-year 'date? 'numeric?)
+
+   ;; Subtracting two dates gives a duration in days
+   (make-binary-function 'date-days 'date? 'date? 'numeric?)
+   (make-binary-function 'date-add-days 'date? 'numeric? 'date?)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Reference functions
@@ -179,11 +192,8 @@ Arguments should be implicitly "promoted" in the following way:
     *maths-combin*
     *logical*
     ; *string*
-    ; *date*
+    *date*
     )))
-
-
-
 
 
 #|
@@ -206,9 +216,7 @@ Infix Operator Range (":").
  COUNTBLANK 6.13.8 
  COUNTIF
 
- DATE 6.10.2 
  DAVERAGE 6.9.2 
- DAY 6.10.5 
  DCOUNT 6.9.3 
  DCOUNTA
 
@@ -249,7 +257,6 @@ Infix Operator Range (":").
  LEFT 6.20.12 
  LEN 6.20.13 
 
- LOG10 6.16.41 
  LOWER 6.20.14 
  MATCH 6.14.9 
  MAX 6.18.45 
@@ -257,7 +264,6 @@ Infix Operator Range (":").
  MIN 6.18.48 
  MINUTE 6.10.12 
  MOD 6.16.42 
- MONTH 6.10.13 
  N 6.13.26 
  NA 6.13.27 
  NOW 6.10.15 
@@ -298,7 +304,6 @@ Infix Operator Range (":").
  VARP 6.18.84 
  VLOOKUP 6.14.12 
  WEEKDAY 6.10.20 
- YEAR 6.10.23
 
 
 |#
