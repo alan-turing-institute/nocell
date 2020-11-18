@@ -95,6 +95,9 @@ that an executable `zip` program is in the user's path.
 
       [(application? xpr)
        `(@ (table:formula ,(build-openformula xpr pos #:cell-hash cell-hash)))]
+
+      [(date? xpr)
+       `(@ (table:formula ,(format-date xpr)))]
     
       [else (raise-user-error "unrecognised type")]))
 
@@ -254,10 +257,20 @@ that an executable `zip` program is in the user's path.
         ['and (format-binary-str "AND" args)]
         ['or (format-binary-str "OR" args)]
         ['if (format-binary-str "IF" args)]
+        ;; date functions
+        ['date (format-date (make-date args))]
+        ['date-day (~a (date-day (car args)))]
+        ['date-month (~a (date-month (car args)))]
+        ['date-year (~a (date-year (car args)))]
+        ['date-days (format-binary '- (map format-date args))]
+        ['date-add-days (format-binary '+ (list (format-date (car args))
+                                                (cadr args)))]
+                                                             
         
+               
         [else (raise-user-error string-append (~a fn) " not yet supported")])))
     
-
+ 
   ;;grid-expression->openformula : expression? -> string?
   (define (grid-expression->openformula xpr)
     (cond
@@ -265,17 +278,32 @@ that an executable `zip` program is in the user's path.
 
       [(number? xpr) (~a xpr)]
 
-      [(boolean? xpr) (match xpr [#t "TRUE"][#f "FALSE"])]
+      [(boolean? xpr) (if xpr "TRUE()" "FALSE()")]
 
       [(error? xpr) (raise-user-error "error types not currently supported in formulae")]
 
       [(reference? xpr) (grid-reference->openformula xpr pos #:cell-hash cell-hash)]
 
       [(application? xpr) (string-append "(" (grid-application->openformula xpr) ")")]
+
+      [(date? xpr) (format-date date)]
     
       [else (raise-user-error "unrecognised type")]))
 
   (grid-application->openformula xpr))
+
+
+;;make-date : [listof integer?] -> date?
+(define (make-date lst)
+  (date (first lst) (second lst) (third lst)))
+
+;;format-date : date? -> string?
+(define (format-date date)
+  (string-append "DATE(" 
+                 (string-join (map ~a (list (date-year date)
+                                            (date-month date)
+                                            (date-day date))) ",")
+                 ")"))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Adding necessary headers to sxml-program for flat ods or extended ods. 
@@ -491,6 +519,11 @@ that an executable `zip` program is in the user's path.
       (table:table-row
        (table:table-cell (@ (table:formula "#N/A")))))))
 
+  ;;date?
+  (check-equal?
+      (format-date (date 2020 11 18))
+      "DATE(2020,11,18)")
+
   ;; application?
   (define binary-tests
      (list
@@ -546,10 +579,10 @@ that an executable `zip` program is in the user's path.
 
   (define logical-tests
     (list
-     (list 'not '(#t) "NOT(TRUE)")
-     (list 'and '(#t #f) "AND(TRUE,FALSE)")
-     (list 'or '(#t #f) "OR(TRUE,FALSE)")
-     (list 'if '(#t #t #f) "IF(TRUE,TRUE,FALSE)")))
+     (list 'not '(#t) "NOT(TRUE())")
+     (list 'and '(#t #f) "AND(TRUE(),FALSE())")
+     (list 'or '(#t #f) "OR(TRUE(),FALSE())")
+     (list 'if '(#t #t #f) "IF(TRUE(),TRUE(),FALSE())")))
 
   (test-case
    "Logical Functions"
@@ -557,6 +590,39 @@ that an executable `zip` program is in the user's path.
      (check-equal?
       (build-openformula (application (first test) (second test)))
       (third test))))
+
+  (define date-tests
+    (list
+     (list 'date
+           '(2020 11 18)
+           "DATE(2020,11,18)")
+     (list 'date-day
+           (list (date 2020 11 18))
+           "18")
+     (list 'date-month
+           (list (date 2020 11 18))
+           "11")
+     (list 'date-year
+           (list (date 2020 11 18))
+           "2020")
+     (list 'date-days
+           (list (date 2020 11 18)
+                 (date 2020 11 19))
+           "DATE(2020,11,18)-DATE(2020,11,19)")
+     (list 'date-add-days
+           (list (date 2020 11 18)
+                 2)
+           "DATE(2020,11,18)+2") 
+     ))
+
+  (test-case
+   "Data functions"
+   (for ([test date-tests])
+     (check-equal?
+      (build-openformula (application (first test) (second test)))
+      (third test))))
+                                     
+                        
   
   ;; see further below for references within applications tests
   ;; define a cell-hash to test references within applications.
