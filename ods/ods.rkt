@@ -11,7 +11,8 @@
          racket/string
          racket/list
          racket/system
-         racket/contract)
+         racket/contract
+         racket/match)
 
 #| 
 A backend for grid which produces Open Document Format spreadsheets. 
@@ -90,7 +91,7 @@ that an executable `zip` program is in the user's path.
       [(application? xpr)
        `(@ (table:formula ,(build-openformula xpr pos #:cell-hash cell-hash)))]
     
-      [else (error "unrecognised type")]))
+      [else (raise-user-error "unrecognised type")]))
 
   `(office:spreadsheet
     (table:table
@@ -108,7 +109,7 @@ that an executable `zip` program is in the user's path.
 ;; References
 
 ;;grid-reference->openformula : expression? indices? [hash-of label? indices?] -> string?
-(define (grid-reference->openformula xpr [pos (indices 0 0)] #:cell-hash cell-hash)
+(define (grid-reference->openformula xpr [pos (indices 0 0)] #:cell-hash [cell-hash (hash)])
 
 
   ;;resolve-location : location? -> string?
@@ -122,12 +123,12 @@ that an executable `zip` program is in the user's path.
       [(relative-location? loc)
        (get-relative-formula (get-referent-indices loc pos #:cell-hash cell-hash))]))
 
-    (cond
-      [(cell-reference? xpr) (resolve-location (cell-reference-loc xpr))]
-      [(range-reference? xpr)
-       (string-append (resolve-location (range-reference-tl xpr))
-                      ":"
-                      (resolve-location (range-reference-br xpr)))]))
+  (cond
+    [(cell-reference? xpr) (resolve-location (cell-reference-loc xpr))]
+    [(range-reference? xpr)
+     (string-append (resolve-location (range-reference-tl xpr))
+                    ":"
+                    (resolve-location (range-reference-br xpr)))]))
 
 ;; get-absolute-formula : indices? -> string?
 (define (get-absolute-formula pos)
@@ -174,50 +175,74 @@ that an executable `zip` program is in the user's path.
 ;; Formulas
 
 ;;build-openformula : application? indices? [hash-of label? indices?] -> string?
-(define (build-openformula xpr pos #:cell-hash cell-hash)
+(define (build-openformula xpr [pos (indices 0 0)] #:cell-hash [cell-hash (hash)])
 
   ;;grid-application->openformula : application? -> string?
   (define (grid-application->openformula app)
+    (if (not (builtin? (application-fn app)))
+        (raise-user-error (string-append (~a (application-fn app) " function not in builtins"))) 
+        (format-app app)))
+       
+  ;;format-binary : builtin? [listof expression?] -> string?
+  (define (format-binary fn args)
+    (string-append (grid-expression->openformula (car args))
+                   (~a fn)
+                   (grid-expression->openformula (cadr args))))
 
-    (define fn (application-fn app))
-    (if (not (builtin? fn))
+  ;;format-binary-str : string? [listof expression?] -> string?
+  (define (format-binary-str fstr args)
+    (string-append fstr "("
+                   (grid-expression->openformula (car args))
+                   ","
+                   (grid-expression->openformula (cadr args))
+                   ")"))
 
-        (error (string-append (~a fn) " function not in builtins"))
-      
-        (let ([args (application-args app)])
-          (cond [(= (length args) 1)
-                 (let ([arg (car args)])
-                   (if (ormap (curry eq? fn) '(+ -))
-                       (string-append (~a fn)
-                                      (grid-expression->openformula arg))
-                       (error (string-append (~a fn) " not supported as a unitary operator"))))]
-              
-                [(= (length args) 2)
-                 (if (ormap (curry eq? fn) '(+ - * /))
-                     (string-append (grid-expression->openformula (car args))
-                                    (~a fn)
-                                    (grid-expression->openformula (cadr args)))
-                     (error (string-append (~a fn) " not yet supported")))]
-              
-                [(> (length args) 2)
-                 (error "more than 2 arguments not currently supported")]))))
+  ;;format-unary : string? expression? -> string?
+  (define (format-unary-str fstr arg)
+    (string-append fstr "("
+                   (grid-expression->openformula arg)
+                   ")"))
+  
+  ;;format-app : application? -> string?
+  (define (format-app app)
+    (let ([fn (application-fn app)]
+          [args (application-args app)])
+      (match fn 
+        ;; a lookup table
+        ;;binary basic maths
+        ['+ (format-binary fn args)]
+        ['- (format-binary fn args)]
+        ['* (format-binary fn args)]
+        ['/ (format-binary fn args)]
+        ['quotient (format-binary-str "QUOTIENT" args)]
+        ['remainder (string-append (format-binary-str "MOD" args) "*SIGN(" (~a (car args)) ")")]
+        ['modulo (format-binary-str "MOD" args)]
+        ;;unary basic maths
+        ['neg (string-append "-" (grid-expression->openformula (car args)))]
+        ['abs (format-unary-str "ABS" (car args))]
+        ['sgn (format-unary-str "SIGN" (car args))]
+        
+        
+        
+        [else (raise-user-error string-append (~a fn) " not yet supported")])))
+    
 
-  ;;parse-formula : expression? -> [listof string?]
+  ;;grid-expression->openformula : expression? -> string?
   (define (grid-expression->openformula xpr)
     (cond
-      [(string? xpr) (error "string types not currently supported in formulae")]
+      [(string? xpr) (raise-user-error "string types not currently supported in formulae")]
 
       [(number? xpr) (~a xpr)]
 
-      [(boolean? xpr) (error "boolean types not currently supported in formulae")]
+      [(boolean? xpr) (raise-user-error "boolean types not currently supported in formulae")]
 
-      [(error? xpr) (error "error types not currently supported in formulae")]
+      [(error? xpr) (raise-user-error "error types not currently supported in formulae")]
 
       [(reference? xpr) (grid-reference->openformula xpr pos #:cell-hash cell-hash)]
 
       [(application? xpr) (string-append "(" (grid-application->openformula xpr) ")")]
     
-      [else (error "unrecognised type")]))
+      [else (raise-user-error "unrecognised type")]))
 
   (grid-application->openformula xpr))
 
@@ -278,7 +303,7 @@ that an executable `zip` program is in the user's path.
     [(ormap (curry eq? type) '("extended" "ods" "e"))
      (sxml->extended-ods sxml-program filename)]
       
-    [else (error "unrecognised type")]))
+    [else (raise-user-error "unrecognised type")]))
 
 
 (define (sxml->flat-ods sxml-program filename)
@@ -412,39 +437,36 @@ that an executable `zip` program is in the user's path.
        (table:table-cell (@ (table:formula "#N/A")))))))
 
   ;; application?
-  (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell (application '+ '(10)))))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "+10")))))))
+  (define binary-tests
+     (list
+      (cons '+ "3+2")
+      (cons '- "3-2")
+      (cons '* "3*2")
+      (cons '/ "3/2")
+      (cons 'quotient "QUOTIENT(3,2)")
+      (cons 'remainder "MOD(3,2)*SIGN(3)")
+      (cons 'modulo "MOD(3,2)")))
 
-  (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell (application '+ '(10 20)))))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "10+20")))))))
+  (test-case
+   "Binary Functions"
+   (for ([tests binary-tests])
+     (check-equal?
+      (build-openformula (application (car tests) '(3 2)))
+      (cdr tests))))
+   
+  (define unary-tests
+    (list
+      (cons 'neg "-4")
+      (cons 'abs "ABS(4)")
+      (cons 'sgn "SIGN(4)")))
 
-  (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell (application '* '(10 20)))))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "10*20")))))))
-
-  (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell (application '/
-                                                     `(10 ,(application '* '(20 30)))))))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "10/(20*30)")))))))
-
+  (test-case
+   "Unary Functions"
+   (for ([tests unary-tests])
+     (check-equal?
+      (build-openformula (application (car tests) '(4)))
+      (cdr tests))))
+  
   ;; see further below for references within applications tests
   ;; define a cell-hash to test references within applications.
   (define cell-refs (locate-labelled-cells
