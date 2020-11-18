@@ -250,11 +250,7 @@ cell reqires two locations: the top-left and bottom-right cells.
 Grid does not support named ranges.}
 
 
-@section{Built-in Functions}
-
-
-
-
+@include-section{"builtins.scrbl"}
 
 @section{Styles}
 

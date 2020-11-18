@@ -25,13 +25,16 @@ Arguments should be implicitly "promoted" in the following way:
 
 (provide
  (contract-out
+  
   ;; Types of arguments to, and return values from, a builtin
   [builtin-arg-type? (-> any/c boolean?)]
+
   ;; The type of a builtin 
   [struct builtin-type
     ((arity     (or/c #f exact-nonnegative-integer?))
      (arg-types (or/c builtin-arg-type? (listof builtin-arg-type?)))
      (ret-type   builtin-arg-type?))]
+
   ;; Hashmap of builtin symbols and their types
   [builtins (hash/c symbol? builtin-type? #:immutable #t)]))
 
@@ -166,10 +169,12 @@ Arguments should be implicitly "promoted" in the following way:
 ;; Date fuctions
 
 
-
+;; ---------------------------------------------------------------------------------------------------
+;; Reference functions
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Make a hash of all the functions
+;; Combine all functions in a hash
+
 (define builtins
   (make-immutable-hasheq
    (append
