@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require racket/contract)
+
 #| 
 
 Declarations of built in-functions
@@ -21,15 +23,13 @@ Arguments should be implicitly "promoted" in the following way:
 
 |#
 
-(require racket/contract)
-
 (provide
  (contract-out
   
-  ;; Types of arguments to, and return values from, a builtin
+  ;; Types of arguments to, and return values from, a built-in function
   [builtin-arg-type? (-> any/c boolean?)]
 
-  ;; The type of a builtin 
+  ;; The type of a built-in function
   [struct builtin-type
     ((arity     (or/c #f exact-nonnegative-integer?))
      (arg-types (or/c builtin-arg-type? (listof builtin-arg-type?)))
@@ -38,12 +38,6 @@ Arguments should be implicitly "promoted" in the following way:
   ;; Hashmap of builtin symbols and their types
   [builtins (hash/c symbol? builtin-type? #:immutable #t)]))
 
-;; builtin-type : A structure to hold information about each built-in.
-;; `arity` should be an integer or #f.
-;; If `arity` is an integer, then `arg-types` should be a list of
-;; builtin-arg-type?. If `arity` is #f then `arg-types` should be a single
-;; builtin-arg-type? and the function may take any number of arguments of that
-;; type (but at least one).
 (struct builtin-type (arity arg-types ret-type) #:transparent)
 
 (define builtin-arg-type?
