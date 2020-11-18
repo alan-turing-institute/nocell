@@ -190,16 +190,13 @@ that an executable `zip` program is in the user's path.
        
   ;;format-binary : builtin? [listof expression?] -> string?
   (define (format-binary fn args)
-    (string-append (grid-expression->openformula (car args))
-                   (~a fn)
-                   (grid-expression->openformula (cadr args))))
+    (string-join (map grid-expression->openformula args) (~a fn)))
 
   ;;format-binary-str : string? [listof expression?] -> string?
   (define (format-binary-str fstr args)
     (string-append fstr "("
-                   (grid-expression->openformula (car args))
-                   ","
-                   (grid-expression->openformula (cadr args))
+                   (string-join
+                    (map grid-expression->openformula args) ",")
                    ")"))
 
   ;;format-unary : string? expression? -> string?
@@ -250,6 +247,14 @@ that an executable `zip` program is in the user's path.
         ;;binary trig
         ['expt (format-binary '^ args)]
         ['log (format-binary-str "LOG" (reverse args))]
+        ;;unary combin
+        ['factorial (format-unary-str "FACT" (car args))]
+        ;;logical
+        ['not (format-unary-str "NOT" (car args))]
+        ['and (format-binary-str "AND" args)]
+        ['or (format-binary-str "OR" args)]
+        ['if (format-binary-str "IF" args)]
+        
         [else (raise-user-error string-append (~a fn) " not yet supported")])))
     
 
@@ -260,7 +265,7 @@ that an executable `zip` program is in the user's path.
 
       [(number? xpr) (~a xpr)]
 
-      [(boolean? xpr) (raise-user-error "boolean types not currently supported in formulae")]
+      [(boolean? xpr) (match xpr [#t "TRUE"][#f "FALSE"])]
 
       [(error? xpr) (raise-user-error "error types not currently supported in formulae")]
 
@@ -507,10 +512,10 @@ that an executable `zip` program is in the user's path.
 
   (test-case
    "Binary Functions"
-   (for ([tests binary-tests])
+   (for ([test binary-tests])
      (check-equal?
-      (build-openformula (application (car tests) '(3 2)))
-      (cdr tests))))
+      (build-openformula (application (car test) '(3 2)))
+      (cdr test))))
    
   (define unary-tests
     (list
@@ -530,14 +535,28 @@ that an executable `zip` program is in the user's path.
       (cons 'cos "COS(4)")
       (cons 'sin "SIN(4)")
       (cons 'tan "TAN(4)")
-      ))
+      (cons 'factorial "FACT(4)")))
 
   (test-case
    "Unary Functions"
-   (for ([tests unary-tests])
+   (for ([test unary-tests])
      (check-equal?
-      (build-openformula (application (car tests) '(4)))
-      (cdr tests))))
+      (build-openformula (application (car test) '(4)))
+      (cdr test))))
+
+  (define logical-tests
+    (list
+     (list 'not '(#t) "NOT(TRUE)")
+     (list 'and '(#t #f) "AND(TRUE,FALSE)")
+     (list 'or '(#t #f) "OR(TRUE,FALSE)")
+     (list 'if '(#t #t #f) "IF(TRUE,TRUE,FALSE)")))
+
+  (test-case
+   "Logical Functions"
+   (for ([test logical-tests])
+     (check-equal?
+      (build-openformula (application (first test) (second test)))
+      (third test))))
   
   ;; see further below for references within applications tests
   ;; define a cell-hash to test references within applications.
