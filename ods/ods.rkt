@@ -67,7 +67,7 @@ that an executable `zip` program is in the user's path.
                 '(office:styles
                   (style:style))))
 
-;; grid-sheet->sxml : sheet? [listof? integer?]  -> string?
+;; grid-sheet->sxml : sheet? [listof? integer?] -> pair?
 (define (grid-sheet->sxml sheet
                           #:blank-rows-before [blank-rows-before '()]
                           #:blank-cols-before [blank-cols-before '()])
@@ -89,7 +89,7 @@ that an executable `zip` program is in the user's path.
            (append row-list new-rows))))))
      
   
-;; grid-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> string?
+;; grid-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> pair?
 (define (grid-row->sxml row
                         i
                         #:cell-hash [cell-hash (hash)]
@@ -108,7 +108,7 @@ that an executable `zip` program is in the user's path.
                                             #:blank-cols-before blank-cols-before)))])
           (append cell-list new-cells)))))
 
-;; grid-cell->sxml : cell? indices? [hash-of label? indices?] [listof? integer?]  -> string?
+;; grid-cell->sxml : cell? indices? [hash-of label? indices?] [listof? integer?]  -> pair?
 (define (grid-cell->sxml cell
                          pos
                          #:cell-hash [cell-hash (hash)]
@@ -168,7 +168,6 @@ that an executable `zip` program is in the user's path.
                                 (cons 'error:undef "#N/A")
                                 (cons 'error:val "#N/A"))))
 
-          
 (define empty-row  '(table:table-row))
 (define empty-cell '(table:table-cell))
 
