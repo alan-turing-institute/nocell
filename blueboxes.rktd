@@ -1,5 +1,5 @@
-3489
-((3) 0 () 15 ((q lib "nocell/grid/grid.rkt") (q 451 . 5) (q 733 . 6) (q 181 . 4) (q 901 . 4) (q 256 . 4) (q 1570 . 5) (q lib "nocell/ods/ods.rkt") (q 1304 . 5) (q 1157 . 3) (q 1210 . 4) (q 1473 . 4) (q 0 . 4) (q 89 . 4) (q 1421 . 3)) () (h ! (equal) ((c def c (c (? . 7) q grid-program->sxml)) q (1860 . 3)) ((c def c (c (? . 0) q application-args)) c (? . 1)) ((c def c (c (? . 0) q labelled-cell?)) c (? . 5)) ((c def c (c (? . 0) q matrix-rows)) c (? . 4)) ((c def c (c (? . 0) q relative-location-target)) c (? . 6)) ((c def c (c (? . 0) q range-reference?)) c (? . 8)) ((c def c (c (? . 0) q date-month)) c (? . 2)) ((c def c (c (? . 0) q error?)) q (681 . 3)) ((c def c (c (? . 0) q struct:application)) c (? . 1)) ((c def c (c (? . 0) q sheet)) c (? . 13)) ((c def c (c (? . 0) q absolute-location-label)) c (? . 11)) ((c def c (c (? . 0) q matrix-ref)) q (1006 . 5)) ((c def c (c (? . 0) q date-day)) c (? . 2)) ((c def c (c (? . 0) q cell)) c (? . 3)) ((c def c (c (? . 0) q struct:reference)) c (? . 9)) ((c def c (c (? . 0) q application-fn)) c (? . 1)) ((c def c (c (? . 0) q cell-xpr)) c (? . 3)) ((c def c (c (? . 0) q struct:cell-reference)) c (? . 10)) ((c def c (c (? . 0) q struct:date)) c (? . 2)) ((c def c (c (? . 0) q matrix?)) c (? . 4)) ((c def c (c (? . 0) q struct:labelled-cell)) c (? . 5)) ((c def c (c (? . 0) q relative-location?)) c (? . 6)) ((c def c (c (? . 0) q struct:location)) c (? . 14)) ((c def c (c (? . 7) q sxml->ods)) q (1698 . 4)) ((c def c (c (? . 0) q struct:range-reference)) c (? . 8)) ((c def c (c (? . 0) q date)) c (? . 2)) ((c def c (c (? . 0) q struct:cell)) c (? . 3)) ((c def c (c (? . 0) q expression?)) q (342 . 3)) ((c def c (c (? . 0) q reference)) c (? . 9)) ((c def c (c (? . 0) q application)) c (? . 1)) ((c def c (c (? . 0) q cell-reference)) c (? . 10)) ((c def c (c (? . 0) q struct:absolute-location)) c (? . 11)) ((c def c (c (? . 0) q nothing?)) q (627 . 3)) ((c def c (c (? . 0) q labelled-cell-lbl)) c (? . 5)) ((c def c (c (? . 0) q cell?)) c (? . 3)) ((c def c (c (? . 0) q program-sheets)) c (? . 12)) ((c def c (c (? . 0) q range-reference-tl)) c (? . 8)) ((c def c (c (? . 0) q relative-location)) c (? . 6)) ((c def c (c (? . 0) q cell-reference?)) c (? . 10)) ((c def c (c (? . 0) q program)) c (? . 12)) ((c def c (c (? . 0) q struct:relative-location)) c (? . 6)) ((c def c (c (? . 0) q reference?)) c (? . 9)) ((c def c (c (? . 0) q labelled-cell)) c (? . 5)) ((c def c (c (? . 0) q struct:program)) c (? . 12)) ((c def c (c (? . 0) q sheet?)) c (? . 13)) ((c def c (c (? . 0) q date-year)) c (? . 2)) ((c def c (c (? . 0) q relative-location-source)) c (? . 6)) ((c def c (c (? . 0) q range-reference-br)) c (? . 8)) ((c def c (c (? . 0) q program?)) c (? . 12)) ((c def c (c (? . 0) q location)) c (? . 14)) ((c def c (c (? . 0) q sheet-rows)) c (? . 13)) ((c def c (c (? . 0) q struct:matrix)) c (? . 4)) ((c def c (c (? . 0) q application?)) c (? . 1)) ((c def c (c (? . 7) q bytes->file)) q (1944 . 4)) ((c def c (c (? . 0) q matrix)) c (? . 4)) ((c def c (c (? . 0) q struct:sheet)) c (? . 13)) ((c def c (c (? . 0) q range-reference)) c (? . 8)) ((c def c (c (? . 0) q atomic-value?)) q (568 . 3)) ((c def c (c (? . 0) q absolute-location)) c (? . 11)) ((c def c (c (? . 0) q date?)) c (? . 2)) ((c def c (c (? . 0) q cell-reference-loc)) c (? . 10)) ((c def c (c (? . 0) q absolute-location?)) c (? . 11)) ((c def c (c (? . 0) q location?)) c (? . 14)) ((c def c (c (? . 0) q value?)) q (399 . 3))))
+4022
+((3) 0 () 17 ((q lib "nocell/grid/grid.rkt") (q lib "nocell/grid/builtins.rkt") (q 1826 . 5) (q 451 . 5) (q 789 . 6) (q 181 . 4) (q 957 . 4) (q 256 . 4) (q 1627 . 5) (q 1360 . 5) (q 1213 . 3) (q 1266 . 4) (q 1529 . 4) (q 0 . 4) (q 89 . 4) (q lib "nocell/ods/ods.rkt") (q 1477 . 3)) () (h ! (equal) ((c def c (c (? . 15) q grid-program->sxml)) q (2268 . 3)) ((c def c (c (? . 1) q builtins)) q (1757 . 2)) ((c def c (c (? . 0) q application-args)) c (? . 3)) ((c def c (c (? . 0) q labelled-cell?)) c (? . 7)) ((c def c (c (? . 0) q matrix-rows)) c (? . 6)) ((c def c (c (? . 0) q relative-location-target)) c (? . 8)) ((c def c (c (? . 0) q range-reference?)) c (? . 9)) ((c def c (c (? . 1) q builtin-type-arity)) c (? . 2)) ((c def c (c (? . 0) q date-month)) c (? . 4)) ((c def c (c (? . 1) q builtin-type-arg-types)) c (? . 2)) ((c def c (c (? . 0) q error?)) q (737 . 3)) ((c def c (c (? . 1) q builtin-type)) c (? . 2)) ((c def c (c (? . 0) q struct:application)) c (? . 3)) ((c def c (c (? . 0) q sheet)) c (? . 14)) ((c def c (c (? . 0) q absolute-location-label)) c (? . 12)) ((c def c (c (? . 0) q matrix-ref)) q (1062 . 5)) ((c def c (c (? . 0) q date-day)) c (? . 4)) ((c def c (c (? . 0) q cell)) c (? . 5)) ((c def c (c (? . 0) q struct:reference)) c (? . 10)) ((c def c (c (? . 0) q application-fn)) c (? . 3)) ((c def c (c (? . 0) q cell-xpr)) c (? . 5)) ((c def c (c (? . 0) q struct:cell-reference)) c (? . 11)) ((c def c (c (? . 0) q struct:date)) c (? . 4)) ((c def c (c (? . 0) q matrix?)) c (? . 6)) ((c def c (c (? . 0) q struct:labelled-cell)) c (? . 7)) ((c def c (c (? . 0) q relative-location?)) c (? . 8)) ((c def c (c (? . 0) q struct:location)) c (? . 16)) ((c def c (c (? . 1) q struct:builtin-type)) c (? . 2)) ((c def c (c (? . 0) q struct:range-reference)) c (? . 9)) ((c def c (c (? . 0) q date)) c (? . 4)) ((c def c (c (? . 0) q struct:cell)) c (? . 5)) ((c def c (c (? . 1) q builtin-type-ret-type)) c (? . 2)) ((c def c (c (? . 0) q expression?)) q (342 . 3)) ((c def c (c (? . 0) q reference)) c (? . 10)) ((c def c (c (? . 0) q application)) c (? . 3)) ((c def c (c (? . 0) q cell-reference)) c (? . 11)) ((c def c (c (? . 0) q struct:absolute-location)) c (? . 12)) ((c def c (c (? . 0) q nothing?)) q (683 . 3)) ((c def c (c (? . 0) q labelled-cell-lbl)) c (? . 7)) ((c def c (c (? . 0) q cell?)) c (? . 5)) ((c def c (c (? . 0) q program-sheets)) c (? . 13)) ((c def c (c (? . 0) q range-reference-tl)) c (? . 9)) ((c def c (c (? . 0) q relative-location)) c (? . 8)) ((c def c (c (? . 0) q cell-reference?)) c (? . 11)) ((c def c (c (? . 0) q program)) c (? . 13)) ((c def c (c (? . 0) q struct:relative-location)) c (? . 8)) ((c def c (c (? . 0) q builtin?)) q (568 . 3)) ((c def c (c (? . 0) q labelled-cell)) c (? . 7)) ((c def c (c (? . 0) q struct:program)) c (? . 13)) ((c def c (c (? . 0) q sheet?)) c (? . 14)) ((c def c (c (? . 0) q date-year)) c (? . 4)) ((c def c (c (? . 0) q relative-location-source)) c (? . 8)) ((c def c (c (? . 0) q range-reference-br)) c (? . 9)) ((c def c (c (? . 0) q program?)) c (? . 13)) ((c def c (c (? . 0) q reference?)) c (? . 10)) ((c def c (c (? . 0) q sheet-rows)) c (? . 14)) ((c def c (c (? . 0) q struct:matrix)) c (? . 6)) ((c def c (c (? . 0) q application?)) c (? . 3)) ((c def c (c (? . 15) q bytes->file)) q (2352 . 4)) ((c def c (c (? . 0) q matrix)) c (? . 6)) ((c def c (c (? . 0) q struct:sheet)) c (? . 14)) ((c def c (c (? . 0) q location)) c (? . 16)) ((c def c (c (? . 0) q range-reference)) c (? . 9)) ((c def c (c (? . 0) q atomic-value?)) q (624 . 3)) ((c def c (c (? . 1) q builtin-arg-type?)) q (2043 . 3)) ((c def c (c (? . 0) q absolute-location)) c (? . 12)) ((c def c (c (? . 1) q builtin-type?)) c (? . 2)) ((c def c (c (? . 0) q date?)) c (? . 4)) ((c def c (c (? . 0) q cell-reference-loc)) c (? . 11)) ((c def c (c (? . 15) q sxml->ods)) q (2106 . 4)) ((c def c (c (? . 0) q absolute-location?)) c (? . 12)) ((c def c (c (? . 0) q location?)) c (? . 16)) ((c def c (c (? . 0) q value?)) q (399 . 3))))
 struct
 (struct program (sheets)
     #:transparent)
@@ -27,6 +27,9 @@ struct
     #:transparent)
   fn : builtin?
   args : (listof expression?)
+procedure
+(builtin? v) -> boolean?
+  v : symbol?
 procedure
 (atomic-value? v) -> boolean?
   v : any/c
@@ -69,12 +72,22 @@ struct
 struct
 (struct absolute-location location (label)
     #:transparent)
-  label : label?
+  label : string?
 struct
 (struct relative-location location (source target)
     #:transparent)
-  source : label?
-  target : label?
+  source : string?
+  target : string?
+value
+builtins : (hash/c symbol? builtin-type? #:immutable #t)
+struct
+(struct builtin-type (arity arg-types ret-type))
+  arity : (or/c #f exact-nonnegative-integer?)
+  arg-types : (or/c builtin-arg-type? (listof builtin-arg-type?))
+  ret-type : builtin-arg-type?
+procedure
+(builtin-arg-type? v) -> boolean?
+  v : any/c
 procedure
 (sxml->ods sxml-program #:type type) -> bytes?
   sxml-program : sxml-program?
