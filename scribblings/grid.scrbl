@@ -255,7 +255,7 @@ cell reqires two locations: the top-left and bottom-right cells.
 Grid does not support named ranges.}
 
 
-@include-section{"builtins.scrbl"}
+@include-section["builtins.scrbl"]
 
 @section{Styles}
 
