@@ -12,6 +12,7 @@ You can see the source code at
 @table-of-contents[]
 
 @; ------------------------------------------------------------------------
+@include-section["cell.scrbl"]
 @include-section["grid.scrbl"]
 @include-section["ods.scrbl"]
 
