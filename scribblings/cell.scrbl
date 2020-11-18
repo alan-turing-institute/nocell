@@ -112,18 +112,29 @@ To apply a function requiring an argument of a particular rank, we decompose its
 actual argument so that the cell of the decomposition is of the required
 rank. @margin-note*{TODO: Note that the decomposition is by rank, not by
 shape. That is, functions that operate on rank-1 arrays must operate on rank-1
-arrays of any length, and so on.} Then we map the function over the frame,
-applying it to each individual cell. The result has a frame that is the same as
-the original frame, and a cell whose shape is determined by the result of the
-function.
+arrays of any length, and so on.} Then we map the function over the
+@italic{frame}, applying it to each individual cell. The result has a frame that
+is the same as the original frame, and a cell whose shape is determined by the
+result of the function. The same idea applies to functions of multiple
+arguments, if the frames of the actual arguments are identical.
 
-Remora's rank polymorphism is slightly more general when a function is applied
-to multiple arguments.
+Remora's rank polymorphism on functions of more than one argument is actually
+slightly more general than this.
 
-First, it is required that the shape of every argument is a prefix of the the
-argument of greatest rank (called the principle argument). Then, all the shorter
-arguments are extended to the shape of the principle argument by duplicating
-each atom into the remainder of the shape.
+First, each actual argument is decomposed as above into a frame and a cell,
+according to the required shape of the formal argument. The frame with the
+greatest rank is called the @italic{principal frame}. It is required that the
+shape of the frame of every argument be a prefix of the shape of the principle
+frame.
+
+Each shorter frame is now extended to the shape of the principle frame by
+replicating its cell as necessary. Then the polymorphism proceeds as before.
+
+@subsection{Rank polymorphism in function position}
+
+
+
+@subection{Higher order functions}
 
 
 
@@ -132,29 +143,20 @@ each atom into the remainder of the shape.
 
 
 
-@bibliography[
-  @bib-entry[#:key "remora"
-             #:title "An Array-Oriented Language with Static Rank Polymorphism"
-             #:author "Justin Slepak, Olin Shivers, and Panagiotis Manolios"
-             #:location "in Programming Languages and Systems (pp. 27--46)"
-             #:date "2014"
-             #:url "http://www.ccs.neu.edu/home/pete/pub/esop14-full.pdf"]
-  @bib-entry[#:key "remora2"
-             #:title "Records with Rank Polymorphism"
-             #:author "Justin Slepak, Olin Shivers, and Panagiotis Manolios"
-             #:location "in ARRAY 2019"
-             #:date "2019"
-             #:url "https://www.ccs.neu.edu/~jrslepak/array19.pdf"]
-  @bib-entry[#:key "remora3"
-             #:title "An Introduction to Rank-polymorphic Programming in Remora (Draft)"
-             #:author "Olin Shivers, Justin Slepak, and Panagiotis Manolios"
-             #:date "2020"
-             #:location "arXiv:1912.13451v2 [cs.PL]"
-             #:url "https://arxiv.org/abs/1912.13451"]
-   @bib-entry[#:key "gibbons2017"
-              #:title "APLicative Programming with Naperian Functors"
-              #:author "Jeremy Gibbons"
-              #:location "Hongseok Yang, editor, European Symposium on Programming. Vol. 10201 of LNCS. Pages 568−583."
-              #:date "2017"
-              #:url "http://www.cs.ox.ac.uk/people/jeremy.gibbons/publications/aplicative.pdf"]
-]
+
+@bibliography[ @bib-entry[#:key "remora" #:title "An Array-Oriented Language
+  with Static Rank Polymorphism" #:author "Justin Slepak, Olin Shivers, and
+  Panagiotis Manolios" #:location "in Programming Languages and Systems
+  (pp. 27--46)" #:date "2014" #:url
+  "http://www.ccs.neu.edu/home/pete/pub/esop14-full.pdf"] @bib-entry[#:key
+  "remora2" #:title "Records with Rank Polymorphism" #:author "Justin Slepak,
+  Olin Shivers, and Panagiotis Manolios" #:location "in ARRAY 2019" #:date
+  "2019" #:url "https://www.ccs.neu.edu/~jrslepak/array19.pdf"] @bib-entry[#:key
+  "remora3" #:title "An Introduction to Rank-polymorphic Programming in Remora
+  (Draft)" #:author "Olin Shivers, Justin Slepak, and Panagiotis Manolios"
+  #:date "2020" #:location "arXiv:1912.13451v2 [cs.PL]" #:url
+  "https://arxiv.org/abs/1912.13451"] @bib-entry[#:key "gibbons2017" #:title
+  "APLicative Programming with Naperian Functors" #:author "Jeremy Gibbons"
+  #:location "Hongseok Yang, editor, European Symposium on
+  Programming. Vol. 10201 of LNCS. Pages 568−583."  #:date "2017" #:url
+  "http://www.cs.ox.ac.uk/people/jeremy.gibbons/publications/aplicative.pdf"] ]
