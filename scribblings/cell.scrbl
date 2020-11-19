@@ -90,10 +90,11 @@ identical shape, apply the operator, component-wise, to the individual atoms.
 
 So there is a sort of built-in polymorphism to array-based programming. What if
 we have a function which takes an @italic{array} as an argument? For example,
-consider the function which sums the elements of a vector, @math{sum} : [*] →
-ℝ. (The notation [*] means `an array of rank 1 but of any length.') Suppose we
-apply @math{sum} to an array of rank 2? What meaning could be ascribed to
-@math{sum A}, where @math{A} is the array [[1 2] [3 4]]?
+consider the function which sums the elements of a vector, @math{sum} : {1} →
+ℝ. (The notation {1} means `an array of rank 1.' This is not the notation used
+by Slepak @italic{et al@._}.) Suppose we apply @math{sum} to an array of rank 2?
+What meaning could be ascribed to @math{sum A}, where @math{A} is the array [[1
+2] [3 4]]?
 
 It's reasonably intuitive that one should apply the @math{sum} to each element
 of @math{A}; each element of @math{A} is a rank-1 array, so just the sort of
@@ -132,11 +133,27 @@ replicating its cell as necessary. Then the polymorphism proceeds as before.
 
 @subsection{Rank polymorphism in function position}
 
+In Remora, the function position of an application may also be an array (an
+array of functions). The process of extending the rank applies to this position
+as well. In particular, this appears to be what happens in the process of
+`automatic mapping'. Thus, for example, in the expression @racket[(+ [1 2] [10
+20])] the function position has rank 0, so the expression becomes
+@racket[([+ +] [1 2] [10 20])] which reduces to @racket[[11 22]].   
 
+Note: I imagine that the rank of the function array is taken to be its entire
+frame.
+
+Note: I don't know what to call the rank of a function that `takes an array of
+at least rank 1 and maps another function across its immediate sub-arrays.` It
+seems here we are specifying the rank of the frames of its arguments.
 
 @subsection{Higher order functions}
 
+Remora provides several versions of reduce, scan, fold, and trace.
 
+Reduce is like fold, but restricted to associative functions. Scan is the
+`prefix partials' version of reduce; and scan is the `prefix partials' version
+of fold.
 
 
 
