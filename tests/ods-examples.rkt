@@ -21,7 +21,7 @@
     (bytes->file ods-bytes "bubbly-extended-bytes.ods")))
 
 
-(let ([budget-sxml (grid-program->sxml budget)])
+(let ([budget-sxml (grid-program->sxml budget #:blank-rows-before '(2 0 0 0 1 0 1))])
    (let ([fods-bytes (sxml->ods budget-sxml #:type "fods")])
     (bytes->file fods-bytes "budget-flat-bytes.xml"))
   
