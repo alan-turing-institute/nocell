@@ -161,7 +161,6 @@ of fold.
 
 
 
-
 @bibliography[ @bib-entry[#:key "remora" #:title "An Array-Oriented Language
   with Static Rank Polymorphism" #:author "Justin Slepak, Olin Shivers, and
   Panagiotis Manolios" #:location "in Programming Languages and Systems
