@@ -42,7 +42,7 @@ that an executable `zip` program is in the user's path.
                   bytes?)]
   [grid-program->sxml (->* (program?)
                            (#:blank-rows-before (listof integer?))
-                            sxml-program?)]
+                           sxml-program?)]
   [bytes->file (-> bytes? string? exact-nonnegative-integer?)]))          
 
 
@@ -56,81 +56,92 @@ that an executable `zip` program is in the user's path.
 ;; grid-program->sxml : program? [listof? integer?] -> sxml-program?
 (define (grid-program->sxml program #:blank-rows-before [blank-rows-before '()])
   (sxml-program `(office:body
-                  ,@(map (curryr grid-sheet->sxml blank-rows-before)
+                  ,@(map (curryr grid-sheet->sxml #:blank-rows-before blank-rows-before)
                          (program-sheets program)))  
                 '(office:styles
                   (style:style))))
 
 ;; grid-sheet->sxml : sheet? -> string?
-(define (grid-sheet->sxml sheet [blank-rows-before '()])
+(define (grid-sheet->sxml sheet
+                          #:blank-rows-before [blank-rows-before '()])
 
   (define cell-hash (locate-labelled-cells sheet))
 
-  ;;insert-rows-before : integer? -> [listof string?]
-  (define (insert-rows-before i)
-    (cond [(empty? blank-rows-before) '()]
-          [else (make-list (list-ref blank-rows-before i) empty-row)]))
-      
-  
-  ;; grid-row->sxml : [listof cell?] integer? -> string?
-  (define (grid-row->sxml row i)
-    `(table:table-row
-      ,@(for/list ([(cell j) (in-indexed row)])
-          (grid-cell->sxml cell (indices i j)))))
-
-  ;; grid-cell->sxml : cell? indices? -> string?
-  (define (grid-cell->sxml cell pos)
-    (cond [(nothing? (cell-xpr cell))
-           empty-cell]
-          [else 
-           `(table:table-cell ,(grid-expression->sxml-attributes (cell-xpr cell) pos))]))
-  
-
-  ;; grid-expression->sxml-attributes : expression? indices? -> string?
-  (define (grid-expression->sxml-attributes xpr pos)
-    (cond
-      [(string? xpr)
-       `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
-
-      [(number? xpr)
-       `(@ (office:value-type "float") (office:value ,(~a xpr)))]
-
-      [(boolean? xpr)
-       `(@ (office:value-type "boolean") (office:boolean-value ,(if xpr "true" "false")))]
-
-      [(error? xpr)
-       `(@ (table:formula ,(hash-ref errors xpr)))]
-
-      [(reference? xpr)
-       `(@ (table:formula ,(grid-reference->openformula xpr
-                                                        pos
-                                                        #:cell-hash cell-hash
-                                                        #:blank-rows-before blank-rows-before)))]
-
-      [(application? xpr)
-       `(@ (table:formula ,(build-openformula xpr
-                                              pos
-                                              #:cell-hash cell-hash
-                                              #:blank-rows-before blank-rows-before)))]
-
-      [(date? xpr)
-       `(@ (table:formula ,(format-date xpr)))]
-    
-      [else (raise-user-error "unrecognised type")]))
-
-  ;;new-row-list : [listof string?] string? -> list?
-  (define (new-row-list empty-rows row)
-    (cond [(empty? empty-rows) (list row)]
-          [else (append empty-rows (list row))]))
   `(office:spreadsheet
     (table:table
      ,@(for/fold ([rowlist '()])
                  ([(row i) (in-indexed (sheet-rows sheet))])
-         (let ([new-rows (new-row-list (insert-rows-before i)
-                                          (grid-row->sxml row i))])
-           (append rowlist new-rows))
-           ))))
- 
+         (let ([new-rows (append
+                          (insert-rows-before i #:blank-rows-before blank-rows-before)
+                          (list
+                           (grid-row->sxml row
+                                           i
+                                           #:cell-hash cell-hash
+                                           #:blank-rows-before blank-rows-before)))])
+           (append rowlist new-rows))))))
+     
+  
+;; grid-row->sxml : [listof cell?] integer? -> string?
+(define (grid-row->sxml row
+                        i
+                        #:cell-hash [cell-hash (hash)]
+                        #:blank-rows-before [blank-rows-before '()])
+  `(table:table-row
+    ,@(for/list ([(cell j) (in-indexed row)])
+        (grid-cell->sxml cell
+                         (indices i j)
+                         #:cell-hash cell-hash
+                         #:blank-rows-before blank-rows-before))))
+
+;; grid-cell->sxml : cell? indices? -> string?
+(define (grid-cell->sxml cell
+                         pos
+                         #:cell-hash [cell-hash (hash)]
+                         #:blank-rows-before [blank-rows-before '()])
+  (cond [(nothing? (cell-xpr cell))
+         empty-cell]
+        [else 
+         `(table:table-cell ,(grid-expression->sxml-attributes
+                              (cell-xpr cell)
+                              pos
+                              #:cell-hash cell-hash
+                              #:blank-rows-before blank-rows-before))]))
+  
+
+;; grid-expression->sxml-attributes : expression? indices? -> string?
+(define (grid-expression->sxml-attributes xpr
+                                          pos
+                                          #:cell-hash [cell-hash (hash)]
+                                          #:blank-rows-before [blank-rows-before '()])
+  (cond
+    [(string? xpr)
+     `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
+
+    [(number? xpr)
+     `(@ (office:value-type "float") (office:value ,(~a xpr)))]
+
+    [(boolean? xpr)
+     `(@ (office:value-type "boolean") (office:boolean-value ,(if xpr "true" "false")))]
+
+    [(error? xpr)
+     `(@ (table:formula ,(hash-ref errors xpr)))]
+
+    [(reference? xpr)
+     `(@ (table:formula ,(grid-reference->openformula xpr
+                                                      pos
+                                                      #:cell-hash cell-hash
+                                                      #:blank-rows-before blank-rows-before)))]
+
+    [(application? xpr)
+     `(@ (table:formula ,(build-openformula xpr
+                                            pos
+                                            #:cell-hash cell-hash
+                                            #:blank-rows-before blank-rows-before)))]
+
+    [(date? xpr)
+     `(@ (table:formula ,(format-date xpr)))]
+    
+    [else (raise-user-error "unrecognised type")]))
 
 (define errors (make-hash (list (cons 'error:arg "#VALUE!")
                                 (cons 'error:undef "#N/A")
@@ -139,6 +150,11 @@ that an executable `zip` program is in the user's path.
           
 (define empty-row  '(table:table-row))
 (define empty-cell '(table:table-cell))
+
+;;insert-rows-before : integer? -> [listof string?]
+(define (insert-rows-before i #:blank-rows-before [blank-rows-before '()])
+  (cond [(empty? blank-rows-before) '()]
+        [else (make-list (list-ref blank-rows-before i) empty-row)]))
 
 
 
@@ -162,6 +178,8 @@ that an executable `zip` program is in the user's path.
               (+ grid-index blanks-sum)]))
 
 
+
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; References
 
@@ -170,31 +188,47 @@ that an executable `zip` program is in the user's path.
                                      #:cell-hash [cell-hash (hash)]
                                      #:blank-rows-before [blank-rows-before '()])
 
-  ;;resolve-location : location? -> string?
-  (define (resolve-location loc)
-    (cond
-      [(absolute-location? loc)
-       (cond [(hash-has-key? cell-hash (absolute-location-label loc))
-              (let ([output-pos (resolve-indices (hash-ref cell-hash (absolute-location-label loc)))])
-                (get-absolute-formula output-pos))]
-             [else "#N/A"])]
-      
-      [(relative-location? loc)
-       (let ([output-pos (resolve-indices (get-referent-indices loc pos #:cell-hash cell-hash))])
-         (get-relative-formula output-pos))]))
-
-  ;;resolve-indices : indices? -> indices?
-  (define (resolve-indices pos)
-    (let ([ri (get-output-row-index (indices-row pos) blank-rows-before)])
-      (indices ri (indices-column pos))))
-
-
-  (cond
-    [(cell-reference? xpr) (resolve-location (cell-reference-loc xpr))]
+   (cond
+    [(cell-reference? xpr) (resolve-location (cell-reference-loc xpr)
+                                             pos
+                                             #:cell-hash cell-hash
+                                             #:blank-rows-before blank-rows-before)]
     [(range-reference? xpr)
-     (string-append (resolve-location (range-reference-tl xpr))
+     (string-append (resolve-location (range-reference-tl xpr)
+                                      pos
+                                      #:cell-hash cell-hash
+                                      #:blank-rows-before blank-rows-before)
                     ":"
-                    (resolve-location (range-reference-br xpr)))]))
+                    (resolve-location (range-reference-br xpr)
+                                      pos
+                                      #:cell-hash cell-hash
+                                      #:blank-rows-before blank-rows-before))]))
+
+;;resolve-location : location? -> string?
+(define (resolve-location loc
+                          [pos (void)]
+                           #:cell-hash [cell-hash (hash)]
+                           #:blank-rows-before [blank-rows-before '()])
+  (cond
+    [(absolute-location? loc)
+     (cond [(hash-has-key? cell-hash (absolute-location-label loc))
+            (let ([output-pos (resolve-indices (hash-ref cell-hash (absolute-location-label loc))
+                                               #:blank-rows-before blank-rows-before)])
+              (get-absolute-formula output-pos))]
+           [else "#N/A"])]
+      
+    [(relative-location? loc)
+     (let ([output-pos (resolve-indices (get-referent-indices loc pos #:cell-hash cell-hash)
+                                        )])
+       (get-relative-formula output-pos))]))
+
+;;resolve-indices : indices? -> indices?
+(define (resolve-indices pos #:blank-rows-before [blank-rows-before '()])
+  (let ([ri (get-output-row-index (indices-row pos) blank-rows-before)])
+    (indices ri (indices-column pos))))
+
+
+ 
 
 ;; get-absolute-formula : indices? -> string?
 (define (get-absolute-formula pos)
@@ -327,22 +361,15 @@ that an executable `zip` program is in the user's path.
   (define (grid-expression->openformula xpr)
     (cond
       [(string? xpr) xpr]
-
       [(number? xpr) (~a xpr)]
-
       [(boolean? xpr) (if xpr "TRUE()" "FALSE()")]
-
       [(error? xpr) (raise-user-error "error types not currently supported in formulae")]
-
       [(reference? xpr) (grid-reference->openformula xpr
                                                      pos
                                                      #:cell-hash cell-hash
                                                      #:blank-rows-before blank-rows-before)]
-
       [(application? xpr) (string-append "(" (grid-application->openformula xpr) ")")]
-
       [(date? xpr) (format-date date)]
-    
       [else (raise-user-error "unrecognised type")]))
 
   (grid-application->openformula xpr))
@@ -558,7 +585,7 @@ that an executable `zip` program is in the user's path.
       (table:table-row
        (table:table-cell (@ (table:formula "#VALUE!")))))))
 
- (check-equal?
+  (check-equal?
    (grid-sheet->sxml (sheet
                       (list (list (cell 'error:undef)))))
    `(office:spreadsheet
@@ -781,7 +808,7 @@ that an executable `zip` program is in the user's path.
   ;;empty rows test
   (check-equal?
    (grid-sheet->sxml (sheet (list (list (cell 1))))
-                     '(2))
+                     #:blank-rows-before '(2))
    `(office:spreadsheet
      (table:table
       (table:table-row)
@@ -801,6 +828,6 @@ that an executable `zip` program is in the user's path.
        (table:table
         (table:table-row
          (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
-   '(office:styles (style:style))))
+    '(office:styles (style:style))))
                      
   ) 
