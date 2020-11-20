@@ -42,7 +42,8 @@ that an executable `zip` program is in the user's path.
                   (#:type (or/c "f" "fods" "flat" "e" "extended" "ods"))
                   bytes?)]
   [grid-program->sxml (->* (program?)
-                           (#:blank-rows-before (listof integer?))
+                           (#:blank-rows-before (listof integer?)
+                            #:blank-cols-before (listof integer?))
                            sxml-program?)]
   [bytes->file (-> bytes? string? exact-nonnegative-integer?)]))          
 
@@ -55,22 +56,27 @@ that an executable `zip` program is in the user's path.
 (struct indices (row column) #:transparent)
 
 ;; grid-program->sxml : program? [listof? integer?] -> sxml-program?
-(define (grid-program->sxml program #:blank-rows-before [blank-rows-before '()])
+(define (grid-program->sxml program
+                            #:blank-rows-before [blank-rows-before '()]
+                            #:blank-cols-before [blank-cols-before '()])
   (sxml-program `(office:body
-                  ,@(map (curryr grid-sheet->sxml #:blank-rows-before blank-rows-before)
+                  ,@(map (curryr grid-sheet->sxml
+                                 #:blank-rows-before blank-rows-before
+                                 #:blank-cols-before blank-cols-before)
                          (program-sheets program)))  
                 '(office:styles
                   (style:style))))
 
 ;; grid-sheet->sxml : sheet? [listof? integer?]  -> string?
 (define (grid-sheet->sxml sheet
-                          #:blank-rows-before [blank-rows-before '()])
+                          #:blank-rows-before [blank-rows-before '()]
+                          #:blank-cols-before [blank-cols-before '()])
 
   (define cell-hash (locate-labelled-cells sheet))
 
   `(office:spreadsheet
     (table:table
-     ,@(for/fold ([rowlist '()])
+     ,@(for/fold ([row-list '()])
                  ([(row i) (in-indexed (sheet-rows sheet))])
          (let ([new-rows (append
                           (insert-rows-before i #:blank-rows-before blank-rows-before)
@@ -78,27 +84,36 @@ that an executable `zip` program is in the user's path.
                            (grid-row->sxml row
                                            i
                                            #:cell-hash cell-hash
-                                           #:blank-rows-before blank-rows-before)))])
-           (append rowlist new-rows))))))
+                                           #:blank-rows-before blank-rows-before
+                                           #:blank-cols-before blank-cols-before)))])
+           (append row-list new-rows))))))
      
   
 ;; grid-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> string?
 (define (grid-row->sxml row
                         i
                         #:cell-hash [cell-hash (hash)]
-                        #:blank-rows-before [blank-rows-before '()])
+                        #:blank-rows-before [blank-rows-before '()]
+                        #:blank-cols-before [blank-cols-before '()])
   `(table:table-row
-    ,@(for/list ([(cell j) (in-indexed row)])
-        (grid-cell->sxml cell
-                         (indices i j)
-                         #:cell-hash cell-hash
-                         #:blank-rows-before blank-rows-before))))
+    ,@(for/fold ([cell-list '()])
+                ([(cell j) (in-indexed row)])
+        (let ([new-cells (append
+                          (insert-cols-before j #:blank-cols-before blank-cols-before)
+                          (list
+                           (grid-cell->sxml cell
+                                            (indices i j)
+                                            #:cell-hash cell-hash
+                                            #:blank-rows-before blank-rows-before
+                                            #:blank-cols-before blank-cols-before)))])
+          (append cell-list new-cells)))))
 
 ;; grid-cell->sxml : cell? indices? [hash-of label? indices?] [listof? integer?]  -> string?
 (define (grid-cell->sxml cell
                          pos
                          #:cell-hash [cell-hash (hash)]
-                         #:blank-rows-before [blank-rows-before '()])
+                         #:blank-rows-before [blank-rows-before '()]
+                         #:blank-cols-before [blank-cols-before '()])
   (cond [(nothing? (cell-xpr cell))
          empty-cell]
         [else 
@@ -106,7 +121,8 @@ that an executable `zip` program is in the user's path.
                               (cell-xpr cell)
                               pos
                               #:cell-hash cell-hash
-                              #:blank-rows-before blank-rows-before))]))
+                              #:blank-rows-before blank-rows-before
+                              #:blank-cols-before blank-cols-before))]))
   
 
 ;; grid-expression->sxml-attributes : expression? indices? [hash-of label? indices?]
@@ -114,7 +130,8 @@ that an executable `zip` program is in the user's path.
 (define (grid-expression->sxml-attributes xpr
                                           pos
                                           #:cell-hash [cell-hash (hash)]
-                                          #:blank-rows-before [blank-rows-before '()])
+                                          #:blank-rows-before [blank-rows-before '()]
+                                          #:blank-cols-before [blank-cols-before '()])
   (cond
     [(string? xpr)
      `(@ (office:value-type "string") (office:string-value ,(~a xpr)))]
@@ -132,13 +149,15 @@ that an executable `zip` program is in the user's path.
      `(@ (table:formula ,(grid-reference->openformula xpr
                                                       pos
                                                       #:cell-hash cell-hash
-                                                      #:blank-rows-before blank-rows-before)))]
+                                                      #:blank-rows-before blank-rows-before
+                                                      #:blank-cols-before blank-cols-before)))]
 
     [(application? xpr)
      `(@ (table:formula ,(build-openformula xpr
                                             pos
                                             #:cell-hash cell-hash
-                                            #:blank-rows-before blank-rows-before)))]
+                                            #:blank-rows-before blank-rows-before
+                                            #:blank-cols-before blank-cols-before)))]
 
     [(date? xpr)
      `(@ (table:formula ,(format-date xpr)))]
@@ -159,6 +178,11 @@ that an executable `zip` program is in the user's path.
         [else (make-list (list-ref blank-rows-before i) empty-row)]))
 
 
+(define (insert-cols-before i #:blank-cols-before [blank-cols-before '()])
+  (cond [(empty? blank-cols-before) '()]
+        [else (make-list (list-ref blank-cols-before i) empty-cell)]))
+
+
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Layout
@@ -173,10 +197,11 @@ that an executable `zip` program is in the user's path.
             (indices i j))))
 
 
-;;get-output-row-index : indices? [listof integer?] -> integer?
-(define (get-output-row-index grid-index blank-rows-before)
-  (cond [(empty? blank-rows-before) grid-index]
-        [else (define blanks-sum (apply + (take blank-rows-before (add1 grid-index))))
+;;get-output-index : indices? [listof integer?] -> integer?
+;; map grid-index to outputted spreadsheet index along the given dimension
+(define (get-output-index grid-index blanks-before)
+  (cond [(empty? blanks-before) grid-index]
+        [else (define blanks-sum (apply + (take blanks-before (add1 grid-index))))
               (+ grid-index blanks-sum)]))
 
 
@@ -188,46 +213,56 @@ that an executable `zip` program is in the user's path.
 ;;grid-reference->openformula : expression? indices? [hash-of label? indices?] -> string?
 (define (grid-reference->openformula xpr [pos (indices 0 0)]
                                      #:cell-hash [cell-hash (hash)]
-                                     #:blank-rows-before [blank-rows-before '()])
+                                     #:blank-rows-before [blank-rows-before '()]
+                                     #:blank-cols-before [blank-cols-before '()])
 
-   (cond
+  (cond
     [(cell-reference? xpr) (resolve-location (cell-reference-loc xpr)
                                              pos
                                              #:cell-hash cell-hash
-                                             #:blank-rows-before blank-rows-before)]
+                                             #:blank-rows-before blank-rows-before
+                                             #:blank-cols-before blank-cols-before)]
     [(range-reference? xpr)
      (string-append (resolve-location (range-reference-tl xpr)
                                       pos
                                       #:cell-hash cell-hash
-                                      #:blank-rows-before blank-rows-before)
+                                      #:blank-rows-before blank-rows-before
+                                      #:blank-cols-before blank-cols-before)
                     ":"
                     (resolve-location (range-reference-br xpr)
                                       pos
                                       #:cell-hash cell-hash
-                                      #:blank-rows-before blank-rows-before))]))
+                                      #:blank-rows-before blank-rows-before
+                                      #:blank-cols-before blank-cols-before))]))
 
 ;;resolve-location : location? -> string?
 (define (resolve-location loc
                           [pos (void)]
-                           #:cell-hash [cell-hash (hash)]
-                           #:blank-rows-before [blank-rows-before '()])
+                          #:cell-hash [cell-hash (hash)]
+                          #:blank-rows-before [blank-rows-before '()]
+                          #:blank-cols-before [blank-cols-before '()])
   (cond
     [(absolute-location? loc)
      (cond [(hash-has-key? cell-hash (absolute-location-label loc))
             (let ([output-pos (resolve-indices (hash-ref cell-hash (absolute-location-label loc))
-                                               #:blank-rows-before blank-rows-before)])
+                                               #:blank-rows-before blank-rows-before
+                                               #:blank-cols-before blank-cols-before)])
               (get-absolute-formula output-pos))]
            [else "#N/A"])]
       
     [(relative-location? loc)
      (let ([output-pos (resolve-indices (get-referent-indices loc pos #:cell-hash cell-hash)
-                                        )])
+                                        #:blank-rows-before blank-rows-before
+                                        #:blank-cols-before blank-cols-before)])
        (get-relative-formula output-pos))]))
 
 ;;resolve-indices : indices? -> indices?
-(define (resolve-indices pos #:blank-rows-before [blank-rows-before '()])
-  (let ([ri (get-output-row-index (indices-row pos) blank-rows-before)])
-    (indices ri (indices-column pos))))
+(define (resolve-indices pos
+                         #:blank-rows-before [blank-rows-before '()]
+                         #:blank-cols-before [blank-cols-before '()])
+  (let ([ri (get-output-index (indices-row pos) blank-rows-before)]
+        [ci (get-output-index (indices-column pos) blank-cols-before)])
+    (indices ri ci)))
 
 
  
@@ -271,7 +306,8 @@ that an executable `zip` program is in the user's path.
 (define (build-openformula xpr
                            [pos (indices 0 0)]
                            #:cell-hash [cell-hash (hash)]
-                           #:blank-rows-before [blank-rows-before '()])
+                           #:blank-rows-before [blank-rows-before '()]
+                           #:blank-cols-before [blank-cols-before '()])
 
   ;;grid-application->openformula : application? -> string?
   (define (grid-application->openformula app)
@@ -369,7 +405,8 @@ that an executable `zip` program is in the user's path.
       [(reference? xpr) (grid-reference->openformula xpr
                                                      pos
                                                      #:cell-hash cell-hash
-                                                     #:blank-rows-before blank-rows-before)]
+                                                     #:blank-rows-before blank-rows-before
+                                                     #:blank-cols-before blank-cols-before)]
       [(application? xpr) (string-append "(" (grid-application->openformula xpr) ")")]
       [(date? xpr) (format-date date)]
       [else (raise-user-error "unrecognised type")]))
@@ -708,11 +745,11 @@ that an executable `zip` program is in the user's path.
                                      
   ;;layout tests
   (check-equal?
-   (get-output-row-index 0 (list 2))
+   (get-output-index 0 (list 2))
    2)
 
   (check-equal?
-   (get-output-row-index 2 (list 1 1 0 0))
+   (get-output-index 2 (list 1 1 0 0))
    4)
   
   ;; see further below for references within applications tests
@@ -818,6 +855,19 @@ that an executable `zip` program is in the user's path.
       (table:table-row
        (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
 
+
+  ;;empty cols test
+  (check-equal?
+   (grid-sheet->sxml (sheet (list (list (cell 1))))
+                     #:blank-cols-before '(2))
+   `(office:spreadsheet
+     (table:table
+      (table:table-row
+       (table:table-cell)
+       (table:table-cell)
+       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
+  
+  
   ;;grid-program->sxml test
   (check-equal?
    (grid-program->sxml (program
