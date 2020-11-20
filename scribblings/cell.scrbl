@@ -152,7 +152,7 @@ seems here we are specifying the rank of the frames of its arguments.
 Remora provides several versions of reduce, scan, fold, and trace.
 
 Reduce is like fold, but restricted to associative functions. Scan is the
-`prefix partials' version of reduce; and scan is the `prefix partials' version
+`prefix partials' version of reduce; and trace is the `prefix partials' version
 of fold.
 
 
