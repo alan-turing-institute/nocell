@@ -24,11 +24,12 @@ that an executable `zip` program is in the user's path.
 
 1. Interface
 2. Conversion of grid program to sxml-program structure with content and styles.
-3. References.
-4. Formulas.
-5. Adding necessary headers to sxml-program for flat ods or extended ods. 
-6. Serialisation - convert sxml-program to flat or extended ods (includes zipping).
-7. Tests.
+3. Layout
+4. References.
+5. Formulas.
+6. Adding necessary headers to sxml-program for flat ods or extended ods. 
+7. Serialisation - convert sxml-program to flat or extended ods (includes zipping).
+8. Tests.
 
 |#
 
@@ -61,7 +62,7 @@ that an executable `zip` program is in the user's path.
                 '(office:styles
                   (style:style))))
 
-;; grid-sheet->sxml : sheet? -> string?
+;; grid-sheet->sxml : sheet? [listof? integer?]  -> string?
 (define (grid-sheet->sxml sheet
                           #:blank-rows-before [blank-rows-before '()])
 
@@ -81,7 +82,7 @@ that an executable `zip` program is in the user's path.
            (append rowlist new-rows))))))
      
   
-;; grid-row->sxml : [listof cell?] integer? -> string?
+;; grid-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> string?
 (define (grid-row->sxml row
                         i
                         #:cell-hash [cell-hash (hash)]
@@ -93,7 +94,7 @@ that an executable `zip` program is in the user's path.
                          #:cell-hash cell-hash
                          #:blank-rows-before blank-rows-before))))
 
-;; grid-cell->sxml : cell? indices? -> string?
+;; grid-cell->sxml : cell? indices? [hash-of label? indices?] [listof? integer?]  -> string?
 (define (grid-cell->sxml cell
                          pos
                          #:cell-hash [cell-hash (hash)]
@@ -108,7 +109,8 @@ that an executable `zip` program is in the user's path.
                               #:blank-rows-before blank-rows-before))]))
   
 
-;; grid-expression->sxml-attributes : expression? indices? -> string?
+;; grid-expression->sxml-attributes : expression? indices? [hash-of label? indices?]
+;; [listof? integer?]  -> string?
 (define (grid-expression->sxml-attributes xpr
                                           pos
                                           #:cell-hash [cell-hash (hash)]
@@ -151,7 +153,7 @@ that an executable `zip` program is in the user's path.
 (define empty-row  '(table:table-row))
 (define empty-cell '(table:table-cell))
 
-;;insert-rows-before : integer? -> [listof string?]
+;;insert-rows-before : integer? [listof integer?] -> [listof string?]
 (define (insert-rows-before i #:blank-rows-before [blank-rows-before '()])
   (cond [(empty? blank-rows-before) '()]
         [else (make-list (list-ref blank-rows-before i) empty-row)]))
