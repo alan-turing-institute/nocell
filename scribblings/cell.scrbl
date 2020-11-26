@@ -32,6 +32,8 @@ on `Remora' @cite["remora" "remora2" "remora3"] which describes a slightly more
 general version of an abstract array language, as well as follow-on work by
 Gibbons @cite["gibbons2017"].
 
+Other array-based languages include Lift, Futhark, and Accelerate. 
+
 However, compared to these languages, we have an additional challenge, which is
 that the `values' of Cell are not only arrays. Instead, the value of a Cell
 program contains also first-order functions and general expressions consisting
@@ -152,28 +154,83 @@ seems here we are specifying the rank of the frames of its arguments.
 Remora provides several versions of reduce, scan, fold, and trace.
 
 Reduce is like fold, but restricted to associative functions. Scan is the
-`prefix partials' version of reduce; and scan is the `prefix partials' version
+`prefix partials' version of reduce; and trace is the `prefix partials' version
 of fold.
 
+@section{`Applicative, Naperian functors'}
+
+Remora considers `vectors of length n' as its main `container type:' Everything
+is vectors of vectors. In @cite["gibbons2017"] Gibbons considers what other kinds
+of types might be suitable as dimensions. He concludes that a type which is
+suitable for being a dimension must have a number of properties. It must be a
+functor, in order to support mapping. It must support `zipping', or equivalently
+`lifting functions inside the container,' and hence be an `applicative'
+functor. In order to support the prefix sums operation it is necessary that the
+container be `traversable.' (This probably gets you folds as well.)
+
+The above allows things like pairs to be dimensions.
+
+Finally, there is the question of `transposition' or `re-ranking.' Suppose one
+has an array of rank 2 -- a `vector v of vectors w' (here v and w should be
+thought of as shapes) -- and a function @tt{f} of rank 1. Normally the
+application of @tt{f} to the rank 2 array would apply @tt{f} to each w, return a
+vector v of results. Occasionally, one really wants to treat the array as a
+`vector w of vectors v', and the application return a vector w fo results. This
+is done by applying @tt{f} to the vector of first elements of all the ws, the
+vector of second elements of the ws, and so on.
+
+There's clearly some kind of isomorphism between a `vector of length n of
+vectors of length m' and `vector of length m of vectors of length n.' The
+question is then what kind of types support this isomorphism. Gibbons' answer is
+a `Naperian functor,' which is, roughly, one that is equivalent to a map from
+some index set.
+
+That is, if @tt{D a} is a `container of things of type a', then @tt{D} is a
+Naperian functor if there is some index type @tt{i} such that @tt{D a} is
+isomorphic to @tt{i -> a}. For example, the type of `rank 1 arrays of length n'
+is equivalent to the type of maps from the naturals less than n to scalars. The
+naturals 0, 1, ..., n-1 index the elements of the vector.
+
+Now we obtain transposition as the natural isomorphism between, say, @tt{i -> j
+-> S} and @tt{j -> i -> S}.
+
+All this is very encouraging since we had already started to consider vectors as
+maps from such an index set.
 
 
 
 
 
 
-@bibliography[ @bib-entry[#:key "remora" #:title "An Array-Oriented Language
-  with Static Rank Polymorphism" #:author "Justin Slepak, Olin Shivers, and
-  Panagiotis Manolios" #:location "in Programming Languages and Systems
-  (pp. 27--46)" #:date "2014" #:url
-  "http://www.ccs.neu.edu/home/pete/pub/esop14-full.pdf"] @bib-entry[#:key
-  "remora2" #:title "Records with Rank Polymorphism" #:author "Justin Slepak,
-  Olin Shivers, and Panagiotis Manolios" #:location "in ARRAY 2019" #:date
-  "2019" #:url "https://www.ccs.neu.edu/~jrslepak/array19.pdf"] @bib-entry[#:key
-  "remora3" #:title "An Introduction to Rank-polymorphic Programming in Remora
-  (Draft)" #:author "Olin Shivers, Justin Slepak, and Panagiotis Manolios"
-  #:date "2020" #:location "arXiv:1912.13451v2 [cs.PL]" #:url
-  "https://arxiv.org/abs/1912.13451"] @bib-entry[#:key "gibbons2017" #:title
-  "APLicative Programming with Naperian Functors" #:author "Jeremy Gibbons"
-  #:location "Hongseok Yang, editor, European Symposium on
-  Programming. Vol. 10201 of LNCS. Pages 568−583."  #:date "2017" #:url
-  "http://www.cs.ox.ac.uk/people/jeremy.gibbons/publications/aplicative.pdf"] ]
+
+
+
+@bibliography[
+  @bib-entry[
+             #:key "remora"
+             #:title "An Array-Oriented Language with Static Rank Polymorphism"
+             #:author "Justin Slepak, Olin Shivers, and Panagiotis Manolios"
+             #:location "in Programming Languages and Systems (pp. 27--46)"
+             #:date "2014"
+             #:url "http://www.ccs.neu.edu/home/pete/pub/esop14-full.pdf"]
+  @bib-entry[
+             #:key "remora2"
+             #:title "Records with Rank Polymorphism"
+             #:author "Justin Slepak,Olin Shivers, and Panagiotis Manolios"
+             #:location "in ARRAY 2019" #:date "2019"
+             #:url "https://www.ccs.neu.edu/~jrslepak/array19.pdf"]
+  @bib-entry[
+             #:key "remora3"
+             #:title "An Introduction to Rank-polymorphic Programming in Remora (Draft)"
+             #:author "Olin Shivers, Justin Slepak, and Panagiotis Manolios"
+             #:date "2020"
+             #:location "arXiv:1912.13451v2 [cs.PL]"
+             #:url "https://arxiv.org/abs/1912.13451"]
+  @bib-entry[
+             #:key "gibbons2017"
+             #:title "APLicative Programming with Naperian Functors"
+             #:author "Jeremy Gibbons"
+             #:location "Hongseok Yang, editor, European Symposium on Programming. Vol. 10201 of LNCS. Pages 568−583."
+             #:date "2017"
+             #:url "http://www.cs.ox.ac.uk/people/jeremy.gibbons/publications/aplicative.pdf"]
+             ]
