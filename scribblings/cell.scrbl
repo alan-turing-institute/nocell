@@ -160,7 +160,7 @@ of fold.
 @section{`Applicative, Naperian functors'}
 
 Remora considers `vectors of length n' as its main `container type:' Everything
-is vectors of vectors. In @cite[gibbons2017] Gibbons considers what other kinds
+is vectors of vectors. In @cite["gibbons2017"] Gibbons considers what other kinds
 of types might be suitable as dimensions. He concludes that a type which is
 suitable for being a dimension must have a number of properties. It must be a
 functor, in order to support mapping. It must support `zipping', or equivalently
