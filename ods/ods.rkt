@@ -477,10 +477,8 @@ that an executable `zip` program is in the user's path.
                    #:type [type 'fods])
   (cond
     [(eq? type 'fods) (sxml->flat-ods-bytes sxml-program)]
-
     [(eq? type 'ods) (sxml->extended-ods-bytes sxml-program)]
-      
-    [else (raise-user-error "unrecognised type")]))
+    [else (error "unrecognised type")]))
 
 ;;sxml->flat-ods-bytes : sxml-program? -> bytes?
 (define (sxml->flat-ods-bytes sxml-program)
