@@ -65,7 +65,10 @@ that an executable `zip` program is in the user's path.
                                  #:blank-cols-before blank-cols-before)
                          (program-sheets program)))  
                 '(office:styles
-                  (style:style))))
+                  (style:style (@ (style:family "table-cell") (style:name "plain")))
+                  (style:style (@ (style:family "table-cell") (style:name "column-label"))
+                               (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
+                               (style:text-properties (@ (fo:font-weight "bold")))))))
 
 ;; grid-sheet->sxml : sheet? [listof? integer?] -> pair?
 (define (grid-sheet->sxml sheet
@@ -117,7 +120,8 @@ that an executable `zip` program is in the user's path.
   (cond [(nothing? (cell-xpr cell))
          empty-cell]
         [else 
-         `(table:table-cell ,(grid-expression->sxml-attributes
+         `(table:table-cell (@ (table:style-name ,(style-cell (cell-attrs cell))))
+                            ,(grid-expression->sxml-attributes
                               (cell-xpr cell)
                               pos
                               #:cell-hash cell-hash
@@ -212,7 +216,8 @@ that an executable `zip` program is in the user's path.
 (define (style-cell cell-attributes)
   (cond
     [(null? cell-attributes) "plain"]
-    [(member 'cell-label cell-attributes) "cell-heading"]))
+    [(member 'column-label cell-attributes) "column-label"]
+    [else (error "unknown style")]))
 
 
 ;; ---------------------------------------------------------------------------------------------------
@@ -446,8 +451,8 @@ that an executable `zip` program is in the user's path.
 (define (flat-sxml sxml-program)
   `(*TOP* ,NS ,PI
           (office:document ,TYPE
-                           ,(sxml-program-content sxml-program)
-                           ,(sxml-program-styles sxml-program))))
+                           ,(sxml-program-styles sxml-program)
+                           ,(sxml-program-content sxml-program))))
 
 (define (extended-sxml sxml-program)
   (list MIME 
