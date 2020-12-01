@@ -8,11 +8,9 @@
 ;; This example could eventually move into its own repository, with
 ;; nocell and whatnow as dependencies
 
-(provide
- ;; write 'example-report-to-finance.ods' with data from example-forecast-records
- write-report-example)
 
-(require "../grid/grid.rkt"
+(require (prefix-in gregor: gregor)
+         "../grid/grid.rkt"
          "../ods/ods.rkt")
 
 ;; (require whatnow/forecast)
@@ -37,7 +35,7 @@
 
 (struct/contract allocation
   allocation-key
-  ([month        string?] ; - Could be a date type: For now, these are YYYY-MM strings (e.g. 2020-04)
+  ([month        gregor:date?]
    [fraction     real?])
   #:transparent)
 
@@ -48,31 +46,31 @@
                "Interesting Ocean"
                "R-XYZ-001"
                "Oliver Strickson"
-               "2020-04"
+               (gregor:date 2020 04)
                0.5)
    (allocation "Data science for science and the humanities"
                "Interesting Ocean"
                "R-XYZ-001"
                "Oliver Strickson"
-               "2020-05"
+               (gregor:date 2020 05)
                0.5)
    (allocation "Data-centric engineering"
                "Ubiquitous Mist"
                "R-ABC-999"
                "Callum Mole"
-               "2020-04"
+               (gregor:date 2020 04)
                0.5)
    (allocation "Data-centric engineering"
                "Ubiquitous Mist"
                "R-ABC-999"
                "James Geddes"
-               "2020-05"
+               (gregor:date 2020 05)
                0.5)))
 
 ;; Allocations as a 'wide' table
 (struct/contract allocation*
   allocation-key
-  ([month-fraction (hash/c string? real?)])
+  ([month-fraction (hash/c gregor:date? real?)])
   #:transparent)
 
 
@@ -90,6 +88,9 @@
                                       (allocation-fraction a)))
                          group))))))
 
+;; ----------------------------------------
+;; Output to nocell grid
+
 (define (allocations->grid forecast-records dates)
   (program
    (list
@@ -100,7 +101,7 @@
              (cell "Project name" '(column-label))
              (cell "Finance code" '(column-label))
              (cell "Person" '(column-label))
-             (map (λ (mon) (cell mon '(column-label))) dates))
+             (map (λ (mon) (cell (gregor:~t mon "MMM yyyy") '(column-label))) dates))
       
       ;; other rows: allocation entries
       (for/list ([a (allocations-tall->wide example-forecast-records)])
@@ -114,8 +115,7 @@
                     dates))))))))
 
 
-(define (write-report-example)
-  (define dates '("2020-03" "2020-04" "2020-05" "2020-06"))
+(define (write-report forecast-records dates)
   (bytes->file
    (sxml->ods
     (grid-program->sxml (allocations->grid example-forecast-records dates)
@@ -123,3 +123,11 @@
                         #:blank-cols-before '(1))
     #:type 'fods)
    "example-report-to-finance.fods"))
+
+
+;; A list of the months comprising the given financial year
+;;
+;; fy-months : exact-integer? -> (listof gregor:date?)
+(define (fy-months y) (map (curry gregor:+months (gregor:date 2020 03)) (range 12)))
+
+(write-report example-forecast-records (fy-months 2020))
