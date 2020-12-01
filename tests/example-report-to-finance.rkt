@@ -110,7 +110,7 @@
                (cell (allocation-key-person a) '())
                (map (λ (mon)
                       (cell (hash-ref (allocation*-month-fraction a) mon 0.0)
-                            '()))
+                            '(output)))
                     dates))))))))
 
 

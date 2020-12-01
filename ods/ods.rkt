@@ -68,7 +68,21 @@ that an executable `zip` program is in the user's path.
                   (style:style (@ (style:family "table-cell") (style:name "plain")))
                   (style:style (@ (style:family "table-cell") (style:name "column-label"))
                                (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
-                               (style:text-properties (@ (fo:font-weight "bold")))))))
+                               (style:text-properties (@ (fo:font-weight "bold"))))
+
+                  (number:number-style (@ (style:name "positive") (style:volatile "true"))
+                                       (number:number (@ (number:decimal-places "2"))))
+                  (number:number-style (@ (style:name "negative") (style:volatile "true"))
+                                       (style:text-properties (@ (fo:color "#ff0000")))
+                                       (number:text "-")
+                                       (number:number (@ (number:decimal-places "2"))))
+                  (number:number-style (@ (style:name "n_output"))
+                                       (number:text "-    ")
+                                       (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
+                                       (style:map (@ (style:condition "value()<0") (style:apply-style-name "negative"))))
+                                           
+                  (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))))
+                               
 
 ;; grid-sheet->sxml : sheet? [listof? integer?] -> pair?
 (define (grid-sheet->sxml sheet
@@ -217,8 +231,8 @@ that an executable `zip` program is in the user's path.
   (cond
     [(null? cell-attributes) "plain"]
     [(member 'column-label cell-attributes) "column-label"]
+    [(member 'output cell-attributes) "output"]
     [else (error "unknown style")]))
-
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; References
