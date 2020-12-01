@@ -118,6 +118,8 @@
   (define dates '("2020-03" "2020-04" "2020-05" "2020-06"))
   (bytes->file
    (sxml->ods
-    (grid-program->sxml (allocations->grid example-forecast-records dates))
+    (grid-program->sxml (allocations->grid example-forecast-records dates)
+                        #:blank-rows-before '(1 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                        #:blank-cols-before '(1 0 0 0 0 0 0 0 0 0 0 0 0 0))
     #:type 'fods)
    "example-report-to-finance.fods"))
