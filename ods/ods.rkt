@@ -573,7 +573,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "1")))))))
   
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -581,7 +583,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "42.0")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "42.0")))))))
  
 
   ;; string?
@@ -591,7 +595,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (office:value-type "string") (office:string-value "")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "string") (office:string-value "")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -599,7 +605,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (office:value-type "string") (office:string-value "hello")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "string") (office:string-value "hello")))))))
 
   
   ;; boolean?
@@ -609,7 +617,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (office:value-type "boolean") (office:boolean-value "true")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "boolean") (office:boolean-value "true")))))))
 
 
   (check-equal?
@@ -618,7 +628,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (office:value-type "boolean") (office:boolean-value "false")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "boolean") (office:boolean-value "false")))))))
 
    
   ;; nothing?
@@ -637,7 +649,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "#VALUE!")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (table:formula "#VALUE!")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -645,7 +659,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "#VALUE!")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (table:formula "#VALUE!")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -653,7 +669,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "#N/A")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (table:formula "#N/A")))))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -661,7 +679,9 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (table:formula "#N/A")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (table:formula "#N/A")))))))
 
   ;;date?
   (check-equal?
@@ -863,9 +883,13 @@ that an executable `zip` program is in the user's path.
    `(office:spreadsheet
      (table:table
       (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "1"))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "1"))))
       (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "2")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "2")))))))
 
   ;;empty rows test
   (check-equal?
@@ -876,7 +900,9 @@ that an executable `zip` program is in the user's path.
       (table:table-row)
       (table:table-row)
       (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "1")))))))
 
 
   ;;empty cols test
@@ -888,7 +914,9 @@ that an executable `zip` program is in the user's path.
       (table:table-row
        (table:table-cell)
        (table:table-cell)
-       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "1")))))))
   
   
   ;;grid-program->sxml test
@@ -902,7 +930,26 @@ that an executable `zip` program is in the user's path.
       (office:spreadsheet
        (table:table
         (table:table-row
-         (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
-    '(office:styles (style:style))))
+         (table:table-cell
+          (@ (table:style-name "plain"))
+          (@ (office:value-type "float") (office:value "1")))))))
+    '(office:styles
+                  (style:style (@ (style:family "table-cell") (style:name "plain")))
+                  (style:style (@ (style:family "table-cell") (style:name "column-label"))
+                               (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
+                               (style:text-properties (@ (fo:font-weight "bold"))))
+
+                  (number:number-style (@ (style:name "positive") (style:volatile "true"))
+                                       (number:number (@ (number:decimal-places "2"))))
+                  (number:number-style (@ (style:name "negative") (style:volatile "true"))
+                                       (style:text-properties (@ (fo:color "#ff0000")))
+                                       (number:text "-")
+                                       (number:number (@ (number:decimal-places "2"))))
+                  (number:number-style (@ (style:name "n_output"))
+                                       (number:text "-    ")
+                                       (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
+                                       (style:map (@ (style:condition "value()<0") (style:apply-style-name "negative"))))
+                                           
+                  (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))))
                      
   ) 
