@@ -204,6 +204,15 @@ that an executable `zip` program is in the user's path.
               (+ grid-index blanks-sum)]))
 
 
+;; style-cell : list? -> string?
+;;
+;; Takes the list of cell attributes and returns the name of the style
+;; for this cell, which should be one of a few styles hardcoded in the
+;; spreadsheet output
+(define (style-cell cell-attributes)
+  (cond
+    [(null? cell-attributes) "plain"]
+    [(member 'cell-label cell-attributes) "cell-heading"]))
 
 
 ;; ---------------------------------------------------------------------------------------------------
