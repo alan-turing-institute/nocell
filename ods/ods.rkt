@@ -541,7 +541,7 @@ that an executable `zip` program is in the user's path.
   ;; number?
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 1)))))
+                      (list (list (cell 1 '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -549,7 +549,7 @@ that an executable `zip` program is in the user's path.
   
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 42.0)))))
+                      (list (list (cell 42.0 '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -559,7 +559,7 @@ that an executable `zip` program is in the user's path.
   ;; string?
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell "")))))
+                      (list (list (cell "" '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -567,7 +567,7 @@ that an executable `zip` program is in the user's path.
 
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell "hello")))))
+                      (list (list (cell "hello" '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -577,7 +577,7 @@ that an executable `zip` program is in the user's path.
   ;; boolean?
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell #t)))))
+                      (list (list (cell #t '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -586,7 +586,7 @@ that an executable `zip` program is in the user's path.
 
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell #f)))))
+                      (list (list (cell #f '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -596,7 +596,7 @@ that an executable `zip` program is in the user's path.
   ;; nothing?
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 'nothing)))))
+                      (list (list (cell 'nothing '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -605,7 +605,7 @@ that an executable `zip` program is in the user's path.
   ;; error?
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:arg)))))
+                      (list (list (cell 'error:arg '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -613,7 +613,7 @@ that an executable `zip` program is in the user's path.
 
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:arg)))))
+                      (list (list (cell 'error:arg '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -621,7 +621,7 @@ that an executable `zip` program is in the user's path.
 
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:undef)))))
+                      (list (list (cell 'error:undef '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -629,7 +629,7 @@ that an executable `zip` program is in the user's path.
 
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:val)))))
+                      (list (list (cell 'error:val '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -752,8 +752,8 @@ that an executable `zip` program is in the user's path.
   (define cell-refs (locate-labelled-cells
                      (sheet
                       (list
-                       (list (labelled-cell "1" "cellA1") (labelled-cell "2" "cellB1"))
-                       (list (labelled-cell "3" "cellA2") (labelled-cell "4" "cellB2"))))))
+                       (list (labelled-cell "1" '() "cellA1") (labelled-cell "2" '() "cellB1"))
+                       (list (labelled-cell "3" '() "cellA2") (labelled-cell "4" '() "cellB2"))))))
 
   (check-equal? cell-refs
                 (hash "cellA1" (indices 0 0)
@@ -783,8 +783,8 @@ that an executable `zip` program is in the user's path.
   (define cell-hash (locate-labelled-cells
                      (sheet
                       (list
-                       (list (labelled-cell "" "cell1") (cell "") (labelled-cell "" "cell3"))
-                       (list (labelled-cell "" "cell4") (labelled-cell "" "cell5") (cell ""))))))
+                       (list (labelled-cell "" '() "cell1") (cell "" '()) (labelled-cell "" '() "cell3"))
+                       (list (labelled-cell "" '() "cell4") (labelled-cell "" '() "cell5") (cell "" '()))))))
 
   (check-equal? cell-hash
                 (hash "cell1" (indices 0 0)
@@ -795,7 +795,7 @@ that an executable `zip` program is in the user's path.
 
   
   ;;cell-reference? absolute-location? test
-  (define absolute-cell (cell (cell-reference (absolute-location "cell5"))))
+  (define absolute-cell (cell (cell-reference (absolute-location "cell5")) '()))
 
   (check-equal?
    (grid-reference->openformula (cell-xpr absolute-cell) #:cell-hash cell-hash)
@@ -809,7 +809,7 @@ that an executable `zip` program is in the user's path.
 
   ;;cell-reference relative-location? test
   ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2")
-  (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4"))))
+  (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4")) '()))
   (check-equal?
    (grid-reference->openformula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
    "C2")
@@ -831,7 +831,7 @@ that an executable `zip` program is in the user's path.
   ;;multiple cells test
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 1)) (list (cell 2)))))
+                      (list (list (cell 1 '())) (list (cell 2 '())))))
    `(office:spreadsheet
      (table:table
       (table:table-row
@@ -841,7 +841,7 @@ that an executable `zip` program is in the user's path.
 
   ;;empty rows test
   (check-equal?
-   (grid-sheet->sxml (sheet (list (list (cell 1))))
+   (grid-sheet->sxml (sheet (list (list (cell 1 '()))))
                      #:blank-rows-before '(2))
    `(office:spreadsheet
      (table:table
@@ -853,7 +853,7 @@ that an executable `zip` program is in the user's path.
 
   ;;empty cols test
   (check-equal?
-   (grid-sheet->sxml (sheet (list (list (cell 1))))
+   (grid-sheet->sxml (sheet (list (list (cell 1 '()))))
                      #:blank-cols-before '(2))
    `(office:spreadsheet
      (table:table
@@ -868,7 +868,7 @@ that an executable `zip` program is in the user's path.
    (grid-program->sxml (program
                         (list
                          (sheet
-                          (list (list (cell 1)))))))
+                          (list (list (cell 1 '())))))))
    (sxml-program
     `(office:body
       (office:spreadsheet
