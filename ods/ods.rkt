@@ -617,121 +617,79 @@ that an executable `zip` program is in the user's path.
   (call-with-output-file fn #:exists 'replace
     (lambda (out) (write-bytes bstr out))))
 
-#|
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; TESTS
 
 (module+ test
   (require rackunit)
 
-  ;; Atomic values, number? string? boolean? error? nothing?
-
   ;; number?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 1 '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
-        (@ (table:style-name "plain"))
-        (@ (office:value-type "float") (office:value "1")))))))
+   (grid-cell->sxml (cell 1 '()) 0)
+     '(table:table-cell
+       (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "1"))))
   
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 42.0 '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
+   (grid-cell->sxml (cell 42.0 '()) 0)
+   '(table:table-cell
         (@ (table:style-name "plain"))
-        (@ (office:value-type "float") (office:value "42.0")))))))
+        (@ (office:value-type "float") (office:value "42.0"))))
  
 
   ;; string?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell "" '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
-        (@ (table:style-name "plain"))
-        (@ (office:value-type "string") (office:string-value "")))))))
+   (grid-cell->sxml (cell "" '()) 0)
+   '(table:table-cell
+     (@ (table:style-name "plain"))
+     (@ (office:value-type "string") (office:string-value ""))))
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell "hello" '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
+   (grid-cell->sxml (cell "hello" '()) 0)
+       '(table:table-cell
         (@ (table:style-name "plain"))
-        (@ (office:value-type "string") (office:string-value "hello")))))))
+        (@ (office:value-type "string") (office:string-value "hello"))))
 
   
   ;; boolean?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell #t '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
+   (grid-cell->sxml (cell #t '()) 0)
+       '(table:table-cell
         (@ (table:style-name "plain"))
-        (@ (office:value-type "boolean") (office:boolean-value "true")))))))
+        (@ (office:value-type "boolean") (office:boolean-value "true"))))
 
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell #f '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
+   (grid-cell->sxml (cell #f '()) 0)
+       '(table:table-cell
         (@ (table:style-name "plain"))
-        (@ (office:value-type "boolean") (office:boolean-value "false")))))))
+        (@ (office:value-type "boolean") (office:boolean-value "false"))))
 
    
   ;; nothing?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'nothing '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell)))))
+   (grid-cell->sxml (cell 'nothing '()) 0)
+       '(table:table-cell))
 
   ;; error?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:arg '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
+   (grid-cell->sxml (cell 'error:arg '()) 0)
+       '(table:table-cell
         (@ (table:style-name "plain"))
-        (@ (table:formula "#VALUE!")))))))
+        (@ (table:formula "#VALUE!"))))
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:arg '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
+   (grid-cell->sxml (cell 'error:arg '()) 0)
+       '(table:table-cell 
         (@ (table:style-name "plain"))
-        (@ (table:formula "#VALUE!")))))))
+        (@ (table:formula "#VALUE!"))))
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:undef '())))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell
+   (grid-cell->sxml (cell 'error:undefin '()) 0)
+       '(table:table-cell 
         (@ (table:style-name "plain"))
-        (@ (table:formula "#N/A")))))))
+        (@ (table:formula "#VALUE!"))))
 
   (check-equal?
    (grid-sheet->sxml (sheet
@@ -977,40 +935,5 @@ that an executable `zip` program is in the user's path.
        (table:table-cell
         (@ (table:style-name "plain"))
         (@ (office:value-type "float") (office:value "1")))))))
-  
-  
-  ;;grid-program->sxml test
-  (check-equal?
-   (grid-program->sxml (program
-                        (list
-                         (sheet
-                          (list (list (cell 1 '())))))))
-   (sxml-program
-    `(office:body
-      (office:spreadsheet
-       (table:table
-        (table:table-row
-         (table:table-cell
-          (@ (table:style-name "plain"))
-          (@ (office:value-type "float") (office:value "1")))))))
-    '(office:styles
-                  (style:style (@ (style:family "table-cell") (style:name "plain")))
-                  (style:style (@ (style:family "table-cell") (style:name "column-label"))
-                               (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
-                               (style:text-properties (@ (fo:font-weight "bold"))))
-
-                  (number:number-style (@ (style:name "positive") (style:volatile "true"))
-                                       (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
-                  (number:number-style (@ (style:name "negative") (style:volatile "true"))
-                                       (style:text-properties (@ (fo:color "#ff0000")))
-                                       (number:text "-")
-                                       (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
-                  (number:number-style (@ (style:name "n_output"))
-                                       (number:text "-    ")
-                                       (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
-                                       (style:map (@ (style:condition "value()<0") (style:apply-style-name "negative"))))
-                                           
-                  (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))))
                      
   ) 
-|#
