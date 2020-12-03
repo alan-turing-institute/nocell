@@ -64,7 +64,7 @@ that an executable `zip` program is in the user's path.
                                  #:blank-rows-before blank-rows-before
                                  #:blank-cols-before blank-cols-before)
                          (program-sheets program)))  
-                '(office:styles
+                `(office:styles
                   (style:style (@ (style:family "table-cell") (style:name "default"))
                                (style:table-cell-properties
                                 (@ (fo:padding-bottom "0.200cm")
@@ -76,6 +76,7 @@ that an executable `zip` program is in the user's path.
                                (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
                                (style:text-properties (@ (fo:font-weight "bold"))))
                   (style:style (@ (style:family "table-row") (style:name "row-default") (style:use-optimal-row-height "true")))
+                  (style:style (@ (style:family "table-column") (style:name "col-default") (style:use-optimal-column-height "true")))
 
                   (number:number-style (@ (style:name "positive") (style:volatile "true"))
                                        (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
@@ -88,7 +89,8 @@ that an executable `zip` program is in the user's path.
                                        (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
                                        (style:map (@ (style:condition "value()<0") (style:apply-style-name "negative"))))
                                            
-                  (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))))
+                  (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output")))
+                  ,@(column-styles (car (program-sheets program)))))) ;relies on the program having one sheet
                                
 
 ;; grid-sheet->sxml : sheet? [listof? integer?] -> pair?
@@ -100,7 +102,7 @@ that an executable `zip` program is in the user's path.
 
   `(office:spreadsheet
     (table:table
-     (insert-columns 10)
+     ,@(insert-columns sheet #:blank-cols-before blank-cols-before)
      ,@(for/fold ([row-list '()])
                  ([(row i) (in-indexed (sheet-rows sheet))])
          (let ([new-rows (append
@@ -112,8 +114,8 @@ that an executable `zip` program is in the user's path.
                                            #:blank-rows-before blank-rows-before
                                            #:blank-cols-before blank-cols-before)))])
            (append row-list new-rows))))))
-     
-  
+   
+
 ;; grid-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> pair?
 (define (grid-row->sxml row
                         i
@@ -124,7 +126,7 @@ that an executable `zip` program is in the user's path.
     ,@(for/fold ([cell-list '()])
                 ([(cell j) (in-indexed row)])
         (let ([new-cells (append
-                          (insert-cols-before j #:blank-cols-before blank-cols-before)
+                          (insert-cells-before j #:blank-cols-before blank-cols-before)
                           (list
                            (grid-cell->sxml cell
                                             (indices i j)
@@ -196,10 +198,7 @@ that an executable `zip` program is in the user's path.
 
 (define empty-row  '(table:table-row))
 (define empty-cell '(table:table-cell))
-
-
-(define (insert-columns n)
-  (make-list n '(table:table-column (@ (table:style-name "co1")))))
+(define empty-col '(table:table-column))
 
 
 ;;insert-rows-before : integer? [listof integer?] -> [listof string?]
@@ -209,15 +208,56 @@ that an executable `zip` program is in the user's path.
         [else (make-list (list-ref blank-rows-before i) empty-row)]))
 
 
-(define (insert-cols-before i #:blank-cols-before [blank-cols-before '()])
+(define (insert-cells-before i #:blank-cols-before [blank-cols-before '()])
   (cond [(empty? blank-cols-before) '()]
         [(> i (sub1 (length blank-cols-before))) '()]
         [else (make-list (list-ref blank-cols-before i) empty-cell)]))
+
+(define (insert-cols-before i #:blank-cols-before [blank-cols-before '()])
+  (cond [(empty? blank-cols-before) '()]
+        [(> i (sub1 (length blank-cols-before))) '()]
+        [else (make-list (list-ref blank-cols-before i) empty-col)]))
+
 
 
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Layout
+
+;;insert-columns
+(define (insert-columns sheet
+                        #:blank-cols-before [blank-cols-before '()])
+  (define widths (column-widths sheet))
+  (for/fold ([col-list '()])
+            ([(width i) (in-indexed widths)])
+       (let ([new-cols (append
+                        (insert-cols-before i #:blank-cols-before blank-cols-before)
+                        (list
+                         `(table:table-column (@ (table:style-name
+                                                  ,(string-append "col" (~a i)))))))])
+         (append col-list new-cols))))
+
+
+;;column-styles
+(define (column-styles sheet)
+  (define widths (column-widths sheet))
+  (for/list ([(width i) (in-indexed widths)])
+    `(style:style (@ (style:family "table-column") (style:name ,(string-append "col" (~a i))))
+                  (style:table-column-properties
+                   (@ (style:column-width ,(string-append (~a width) "cm")))))))
+                     
+
+;; column-widths : sheet? positive? positive? -> [listof positive?] 
+;; Estimate column widths based on cell-content
+(define (column-widths sheet [default-width 1.5] [min-width 1])
+  (define cell-widths (for/list ([(row i) (in-indexed (sheet-rows sheet))])
+                        (for/list ([(cell j) (in-indexed row)])
+                          (cond [(string? (cell-xpr cell))
+                                 (max min-width (* (string-length (cell-xpr cell)) .5))]
+                                [else default-width]))))
+  (define transposed (apply map list cell-widths))
+  (map (curry apply max) transposed))
+              
 
 ;; locate-labelled-cells : sheet? -> [hash-of label? indices?]
 ;; Determine the grid locations of labelled cells
@@ -572,7 +612,7 @@ that an executable `zip` program is in the user's path.
   (call-with-output-file fn #:exists 'replace
     (lambda (out) (write-bytes bstr out))))
 
-
+#|
 ;; ---------------------------------------------------------------------------------------------------
 ;; TESTS
 
@@ -968,3 +1008,4 @@ that an executable `zip` program is in the user's path.
                   (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))))
                      
   ) 
+|#
