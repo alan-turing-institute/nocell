@@ -119,7 +119,7 @@
   (bytes->file
    (sxml->ods
     (grid-program->sxml (allocations->grid example-forecast-records dates)
-                        #:blank-rows-before '(1 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                        #:blank-cols-before '(1 0 0 0 0 0 0 0 0 0 0 0 0 0))
+                        #:blank-rows-before '(1)
+                        #:blank-cols-before '(1))
     #:type 'fods)
    "example-report-to-finance.fods"))

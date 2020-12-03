@@ -198,11 +198,13 @@ that an executable `zip` program is in the user's path.
 ;;insert-rows-before : integer? [listof integer?] -> [listof string?]
 (define (insert-rows-before i #:blank-rows-before [blank-rows-before '()])
   (cond [(empty? blank-rows-before) '()]
+        [(> i (sub1 (length blank-rows-before))) '()] 
         [else (make-list (list-ref blank-rows-before i) empty-row)]))
 
 
 (define (insert-cols-before i #:blank-cols-before [blank-cols-before '()])
   (cond [(empty? blank-cols-before) '()]
+        [(> i (sub1 (length blank-cols-before))) '()]
         [else (make-list (list-ref blank-cols-before i) empty-cell)]))
 
 
