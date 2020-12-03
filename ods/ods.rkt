@@ -64,7 +64,7 @@ that an executable `zip` program is in the user's path.
                                  #:blank-rows-before blank-rows-before
                                  #:blank-cols-before blank-cols-before)
                          (program-sheets program)))  
-                `(office:styles
+                (list '(office:styles
                   (style:style (@ (style:family "table-cell") (style:name "default"))
                                (style:table-cell-properties
                                 (@ (fo:padding-bottom "0.200cm")
@@ -75,9 +75,6 @@ that an executable `zip` program is in the user's path.
                   (style:style (@ (style:family "table-cell") (style:name "column-label") (style:parent-style-name "default"))
                                (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
                                (style:text-properties (@ (fo:font-weight "bold"))))
-                  (style:style (@ (style:family "table-row") (style:name "row-default") (style:use-optimal-row-height "true")))
-                  (style:style (@ (style:family "table-column") (style:name "col-default") (style:use-optimal-column-height "true")))
-
                   (number:number-style (@ (style:name "positive") (style:volatile "true"))
                                        (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
                   (number:number-style (@ (style:name "negative") (style:volatile "true"))
@@ -89,8 +86,13 @@ that an executable `zip` program is in the user's path.
                                        (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
                                        (style:map (@ (style:condition "value()<0") (style:apply-style-name "negative"))))
                                            
-                  (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output")))
-                  ,@(column-styles (car (program-sheets program)))))) ;relies on the program having one sheet
+                  (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))
+                  `(office:automatic-styles
+                    (style:style (@ (style:family "table-row") (style:name "row-default"))
+                               (style:table-row-properties (@ (style:use-optimal-row-height "true"))))
+                ;  (style:style (@ (style:family "table-column") (style:name "col-default"))
+                ;                (style:table-column-properties (@ (style:use-optimal-column-width "true"))))))))
+                  ,@(column-styles (car (program-sheets program))))))) ;relies on the program having one sheet
                                
 
 ;; grid-sheet->sxml : sheet? [listof? integer?] -> pair?
@@ -253,7 +255,10 @@ that an executable `zip` program is in the user's path.
   (define cell-widths (for/list ([(row i) (in-indexed (sheet-rows sheet))])
                         (for/list ([(cell j) (in-indexed row)])
                           (cond [(string? (cell-xpr cell))
-                                 (max min-width (* (string-length (cell-xpr cell)) .5))]
+                                 (cond [(member 'column-label (cell-attrs cell))
+                                        (max min-width (* (string-length (cell-xpr cell)) .22))]
+                                        [else
+                                         (max min-width (* (string-length (cell-xpr cell)) .18))])]
                                 [else default-width]))))
   (define transposed (apply map list cell-widths))
   (map (curry apply max) transposed))
@@ -520,7 +525,7 @@ that an executable `zip` program is in the user's path.
 (define (flat-sxml sxml-program)
   `(*TOP* ,NS ,PI
           (office:document ,TYPE
-                           ,(sxml-program-styles sxml-program)
+                           ,@(sxml-program-styles sxml-program)
                            ,(sxml-program-content sxml-program))))
 
 (define (extended-sxml sxml-program)
@@ -537,7 +542,7 @@ that an executable `zip` program is in the user's path.
 (define (xml-styles sxml-styles)
   `(*TOP* ,NS ,PI
           (office:document-styles ,TYPE
-                                  ,sxml-styles)))
+                                  ,@sxml-styles)))
 
 (define xml-manifest
   `(*TOP* ,NS ,PI
