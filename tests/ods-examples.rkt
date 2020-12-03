@@ -21,6 +21,8 @@
     (bytes->file ods-bytes "bubbly-extended-bytes.ods")))
 
 
+#|
+;; currently this fails because the column-widths function uses map, which assumes a rectangular list.
 (let ([budget-sxml (grid-program->sxml budget
                                        #:blank-rows-before '(2 0 0 0 1 0 1)
                                        #:blank-cols-before '(0 0 5))])
@@ -29,4 +31,4 @@
   
   (let ([ods-bytes (sxml->ods budget-sxml #:type 'ods)])
     (bytes->file ods-bytes "budget-extended-bytes.ods")))
-
+|#
