@@ -75,6 +75,7 @@ that an executable `zip` program is in the user's path.
                   (style:style (@ (style:family "table-cell") (style:name "column-label") (style:parent-style-name "default"))
                                (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
                                (style:text-properties (@ (fo:font-weight "bold"))))
+                  (style:style (@ (style:family "table-row") (style:name "row-default") (style:use-optimal-row-height "true")))
 
                   (number:number-style (@ (style:name "positive") (style:volatile "true"))
                                        (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
@@ -99,6 +100,7 @@ that an executable `zip` program is in the user's path.
 
   `(office:spreadsheet
     (table:table
+     (insert-columns 10)
      ,@(for/fold ([row-list '()])
                  ([(row i) (in-indexed (sheet-rows sheet))])
          (let ([new-rows (append
@@ -118,7 +120,7 @@ that an executable `zip` program is in the user's path.
                         #:cell-hash [cell-hash (hash)]
                         #:blank-rows-before [blank-rows-before '()]
                         #:blank-cols-before [blank-cols-before '()])
-  `(table:table-row (@ (style:use-optimimum-row-height "true"))
+  `(table:table-row (@ (table:style-name "row-default"))
     ,@(for/fold ([cell-list '()])
                 ([(cell j) (in-indexed row)])
         (let ([new-cells (append
@@ -194,6 +196,11 @@ that an executable `zip` program is in the user's path.
 
 (define empty-row  '(table:table-row))
 (define empty-cell '(table:table-cell))
+
+
+(define (insert-columns n)
+  (make-list n '(table:table-column (@ (table:style-name "co1")))))
+
 
 ;;insert-rows-before : integer? [listof integer?] -> [listof string?]
 (define (insert-rows-before i #:blank-rows-before [blank-rows-before '()])
