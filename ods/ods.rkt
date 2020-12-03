@@ -65,17 +65,23 @@ that an executable `zip` program is in the user's path.
                                  #:blank-cols-before blank-cols-before)
                          (program-sheets program)))  
                 '(office:styles
-                  (style:style (@ (style:family "table-cell") (style:name "plain")))
-                  (style:style (@ (style:family "table-cell") (style:name "column-label"))
+                  (style:style (@ (style:family "table-cell") (style:name "default"))
+                               (style:table-cell-properties
+                                (@ (fo:padding-bottom "0.200cm")
+                                   (fo:padding-left "0.100cm")
+                                   (fo:padding-right "0.100cm")
+                                   (fo:padding-top "0.200cm"))))
+                  (style:style (@ (style:family "table-cell") (style:name "plain") (style:parent-style-name "default")))
+                  (style:style (@ (style:family "table-cell") (style:name "column-label") (style:parent-style-name "default"))
                                (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
                                (style:text-properties (@ (fo:font-weight "bold"))))
 
                   (number:number-style (@ (style:name "positive") (style:volatile "true"))
-                                       (number:number (@ (number:decimal-places "2"))))
+                                       (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
                   (number:number-style (@ (style:name "negative") (style:volatile "true"))
                                        (style:text-properties (@ (fo:color "#ff0000")))
                                        (number:text "-")
-                                       (number:number (@ (number:decimal-places "2"))))
+                                       (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
                   (number:number-style (@ (style:name "n_output"))
                                        (number:text "-    ")
                                        (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
@@ -112,7 +118,7 @@ that an executable `zip` program is in the user's path.
                         #:cell-hash [cell-hash (hash)]
                         #:blank-rows-before [blank-rows-before '()]
                         #:blank-cols-before [blank-cols-before '()])
-  `(table:table-row
+  `(table:table-row (@ (style:use-optimimum-row-height "true"))
     ,@(for/fold ([cell-list '()])
                 ([(cell j) (in-indexed row)])
         (let ([new-cells (append
@@ -940,11 +946,11 @@ that an executable `zip` program is in the user's path.
                                (style:text-properties (@ (fo:font-weight "bold"))))
 
                   (number:number-style (@ (style:name "positive") (style:volatile "true"))
-                                       (number:number (@ (number:decimal-places "2"))))
+                                       (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
                   (number:number-style (@ (style:name "negative") (style:volatile "true"))
                                        (style:text-properties (@ (fo:color "#ff0000")))
                                        (number:text "-")
-                                       (number:number (@ (number:decimal-places "2"))))
+                                       (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
                   (number:number-style (@ (style:name "n_output"))
                                        (number:text "-    ")
                                        (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
