@@ -253,6 +253,7 @@
                  (or (member (allocation-client a) '("Corporate Duties"
                                                      "REG Service Areas"
                                                      "Trac days"
+                                                     "Turing Programme Support"
                                                      "Turing Service Areas"
                                                      "UNAVAILABLE"))
                      (andmap zero? (hash-values (allocation-month-fraction a)))))
