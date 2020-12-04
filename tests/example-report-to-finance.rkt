@@ -17,80 +17,77 @@
          "../grid/grid.rkt"
          "../ods/ods.rkt")
 
+;; ----------------------------------------
+;; Utility
+
+;; Orders a and b 'lexicographically' by applying each function in
+;; 'keys' to both a and b in turn, and comparing the results with '<'
+;; and '='.
+;;
+;; lexicographic<=?
+;;  : (listof (-> any/c any/c)) (-> any/c any/c) (-> any/c any/c)
+;;      -> any/c any/c -> boolean?
+(define ((lexicographic<=? keys < =) a b)
+  (or (null? keys)
+      (let ([key (car keys)])
+        (or (< (key a) (key b))
+            (and (= (key a) (key b))
+                 ((lexicographic<=? (cdr keys) < =) a b))))))
+
 
 ;; ----------------------------------------
 ;; Forecast monthly allocation data
-
-;; Could use the data-frame library here (but avoiding the dependency
-;; for now)
-
-;; forecast allocation data
 ;;
-;; Define with struct/contract to get checking within the module
-;; (not worried about performance of this yet)
+;; - Could use the data-frame library here (but avoiding the
+;;   dependency for now)
 
-(struct/contract allocation-key
+;; project-code? : string? -> boolean?
+(define (project-code? t)
+  (regexp-match? #px"^R-[[:alnum:]]+-[[:alnum:]]+$" t))
+
+;;
+;; Allocation from people to projects for a range of months
+;; 
+;;  - The triple (client, project, person) uniquely specifies an allocation
+;;
+;;  - As a 'wide table': the field month-fraction is a hash table from
+;;    month (the gregor:date of the first day in the month) to fractional
+;;    allocation
+(struct/contract allocation
   ([client       string?]
    [project      string?]
-   [code         string?]
-   [person       string?])
+   [code         (or/c project-code? "")]
+   [person       string?]
+   [month-fraction (hash/c gregor:date? real? #:flat? #t)])
   #:transparent)
 
-(struct/contract allocation
-  allocation-key
-  ([month        gregor:date?]
-   [fraction     real?])
-  #:transparent)
+;; Order allocations lexicographically by (client, project, person)
+;;
+;; allocation<=? : allocation? allocation? -> boolean?
+(define allocation<=? (lexicographic<=? (list allocation-client
+                                              allocation-project
+                                              allocation-person)
+                                        string<?
+                                        string=?))
 
-
-(define example-forecast-records
+(define example-allocations
   (list
    (allocation "Data science for science and the humanities"
                "Interesting Ocean"
                "R-XYZ-001"
                "Oliver Strickson"
-               (gregor:date 2020 04)
-               0.5)
-   (allocation "Data science for science and the humanities"
-               "Interesting Ocean"
-               "R-XYZ-001"
-               "Oliver Strickson"
-               (gregor:date 2020 05)
-               0.5)
+               (hash (gregor:date 2020 04) 0.5
+                     (gregor:date 2020 05) 0.5))
    (allocation "Data-centric engineering"
                "Ubiquitous Mist"
                "R-ABC-999"
                "Callum Mole"
-               (gregor:date 2020 04)
-               0.5)
+               (hash (gregor:date 2020 04) 0.5))
    (allocation "Data-centric engineering"
                "Ubiquitous Mist"
                "R-ABC-999"
                "James Geddes"
-               (gregor:date 2020 05)
-               0.5)))
-
-;; Allocations as a 'wide' table
-(struct/contract allocation*
-  allocation-key
-  ([month-fraction (hash/c gregor:date? real?
-                           #:flat? #t)])
-  #:transparent)
-
-
-(define (key a) (struct-copy allocation-key a))
-
-(define (allocations-tall->wide forecast-records)
-  (for/list ([group (group-by key forecast-records)])
-    (let ([common (key (car group))])
-      (allocation* (allocation-key-client common)
-                   (allocation-key-project common)
-                   (allocation-key-code common)
-                   (allocation-key-person common)
-                   (make-hash
-                    (map (λ (a) (cons (allocation-month a)
-                                      (allocation-fraction a)))
-                         group))))))
+               (hash (gregor:date 2020 05) 0.5))))
 
 
 ;; ----------------------------------------
@@ -140,6 +137,11 @@
                        (in-date-interval
                         (date-interval start (+days start d)))))))
 
+;; A list of the months comprising the given financial year
+;;
+;; fy-months : exact-integer? -> (listof gregor:date?)
+(define (fy-months y) (map (curry +months (gregor:date 2020 03)) (range 12)))
+
 
 ;; ----------------------------------------
 ;; Retreive data from Forecast via whatnow, returned as 'allocation' objects
@@ -147,51 +149,36 @@
 ;; Conversion factor for Forecast assignments (28800 seconds in an 8 hour workday)
 (define secs/workday.fte-fraction 28800)
 
-;; Does this string have the correct form for a project code?
-;;
-;; project-code? : string? -> boolean?
-(define (project-code? t)
-  (regexp-match? #px"^R-[[:alnum:]]+-[[:alnum:]]+$" t))
-
 ;; Return mappings (as hash tables) from ids to names, for the data
 ;; returned from Forecast:
 ;;  - person-id => full name 
-;;  - client-id => client-name
 ;;  - project-id => (list client-name project-name project-code)
 ;; 
 ;; schedule-id-name-mappings : schedule? -> (values (hash/c number? string?)
-;;                                                  (hash/c number? string?)
 ;;                                                  (hash/c number? string?))
 (define (schedule-id-name-mappings whatnow-schedule)
   (match-let*
       ([(schedule people projects programmes assignments) whatnow-schedule]
-       
-       ;; person-id to full name
-       ;; : (hash/c number? string?)
-       [person-id=>name
-        (for/hash ([p people])
-          ;; check for REG permanent RSE/RDS...
-          (values (person-id p)
-                  (string-join (list (person-first-name p)
-                                     (person-last-name p)))))]
-       
        ;; client-id to client name
        ;; : (hash/c number? string?)
        [client-id=>name
-        (for/hash ([p programmes])
-          (values (client-id p)
-                  (client-name p)))]
-       
-       ;; project-id to list of client name, project name and project code
-       ;; : (hash/c number? (listof (or/c string? #f)))       
-       [project-id=>data
-        (for/hash ([p projects])
-          (values (project-id p)
-                  (list (hash-ref client-id=>name (project-client-id p) #f)
-                        (project-name p)
-                        (findf project-code? (project-tags p)))))])
+        (for/hash ([p programmes]) (values (client-id p) (client-name p)))])
 
-    (values person-id=>name client-id=>name project-id=>data)))
+    (values
+     ;; - person-id to full name
+     ;; : (hash/c number? string?)
+     (for/hash ([p people]
+                #:when (or (member "REG Permanent" (person-roles p))
+                           (member "REG FTC" (person-roles p))))
+       (values (person-id p)
+               (string-join (list (person-first-name p) (person-last-name p)))))     
+     ;; - project-id to list of client name, project name and project code
+     ;; : (hash/c number? (listof (or/c string? #f)))
+     (for/hash ([p projects])
+       (values (project-id p)
+               (list (hash-ref client-id=>name (project-client-id p) #f)
+                     (project-name p)
+                     (findf project-code? (project-tags p))))))))
 
 ;; Given a (whatnow) assigment, and a month (as a gregor date --
 ;; nominally the first day in the month, but could by any date),
@@ -215,39 +202,40 @@
       (/ (net-workdays (date-interval-intersect a* m*))
          (net-workdays m*))))))
 
-;; schedule->allocations schedule? (listof gregor:date?) : -> (listof allocation?)
+;; schedule->allocations : schedule? (listof gregor:date?) -> (listof allocation?)
 (define (schedule->allocations whatnow-schedule months)
-  (let-values ([(person-id=>name client-id=>name project-id=>data)
+  (let-values ([(person-id=>name project-id=>data)
                 (schedule-id-name-mappings whatnow-schedule)]
-               ;;
                ;; groups of assignments with common person-id and project-id
-               ;;  : (listof (listof assignment?))
+               ;; : (listof (listof assignment?))
                [(assignment-groups)
                  (group-by (λ (a) (cons (assignment-person-id a)
                                         (assignment-project-id a)))
                            (schedule-assignments whatnow-schedule))])
-    
-    (for/list ([assgns assignment-groups])
-      (match-let
-          ;; use the first assignment in the group for its representative
-          ;; person-id and project-id
-          ([person
-            (hash-ref person-id=>name (assignment-person-id (car assgns))
-                      "UNKNOWN")]
-           [(list client project code)
-            (hash-ref project-id=>data (assignment-project-id (car assgns))
-                      '("UNKNOWN" "UNKNOWN" "UNKNOWN"))])
-        (allocation*
-         client project (or code "") person
+
+    ;; Helpers to extract the common data for each group of assignments
+    (define (group-person g)
+      (hash-ref person-id=>name (assignment-person-id (car g)) #f))
+    (define (group-project g)
+      (hash-ref project-id=>data (assignment-project-id (car g)) #f))
+
+    (for/list ([assgns assignment-groups]
+               ;; Ignore 'missing' people and projects
+               #:when (and (group-person assgns) (group-project assgns)))
+      (match-let ([person (group-person assgns)]
+                  [(list client-name project-name code) (group-project assgns)])
+        (allocation
+         client-name project-name (or code "") person
          (for/hash ([m months])
            (values m
                    (for/sum ([a assgns]) (assignment-fte-in-month a m)))))))))
 
 
 ;; ----------------------------------------
-;; Output to nocell grid
+;; Output to a nocell grid program
 
-(define (allocations->grid forecast-records dates)
+;; allocations->grid : (listof allocation?) (listof gregor:date?) -> program?
+(define (allocations->grid allocations dates)
   (program
    (list
     (sheet
@@ -259,29 +247,42 @@
              (cell "Person" '(column-label))
              (map (λ (mon) (cell (~t mon "MMM yyyy") '(column-label))) dates))
       
-      ;; other rows: allocation entries
-      (for/list ([a forecast-records])
-        (list* (cell (allocation-key-client a) '())
-               (cell (allocation-key-project a) '())
-               (cell (allocation-key-code a) '())
-               (cell (allocation-key-person a) '())
+      ;; other rows: allocation entries, with some exclusions
+      (for/list ([a (sort allocations allocation<=?)]
+                 #:unless
+                 (or (member (allocation-client a) '("Corporate Duties"
+                                                     "REG Service Areas"
+                                                     "Trac days"
+                                                     "Turing Service Areas"
+                                                     "UNAVAILABLE"))
+                     (andmap zero? (hash-values (allocation-month-fraction a)))))
+
+        (list* (cell (allocation-client a) '())
+               (cell (allocation-project a) '())
+               (cell (allocation-code a) '())
+               (cell (allocation-person a) '())
                (map (λ (mon)
-                      (cell (hash-ref (allocation*-month-fraction a) mon 0.0)
+                      (cell (hash-ref (allocation-month-fraction a) mon 0.0)
                             '(output)))
                     dates))))))))
 
-(define (write-report forecast-records dates)
-  (bytes->file
-   (sxml->ods
-    (grid-program->sxml (allocations->grid example-forecast-records dates)
-                        #:blank-rows-before '(1)
-                        #:blank-cols-before '(1))
-    #:type 'fods)
-   "example-report-to-finance.fods"))
+;; make-report-ods : (listof allocation?) (listof gregor:date?) -> bytes?
+(define (make-report-ods allocations dates)
+  (sxml->ods
+   (grid-program->sxml (allocations->grid allocations dates)
+                       #:blank-rows-before '(1)
+                       #:blank-cols-before '(1))
+   #:type 'fods))
 
-;; A list of the months comprising the given financial year
-;;
-;; fy-months : exact-integer? -> (listof gregor:date?)
-(define (fy-months y) (map (curry +months (gregor:date 2020 03)) (range 12)))
 
-;(write-report example-forecast-records (fy-months 2020))
+;; ----------------------------------------
+;; Examples
+
+(bytes->file (make-report-ods example-allocations (fy-months 2020))
+             "example-report-to-finance.fods")
+
+;; (let ([months (fy-months 2020)]
+;;       [forecast-schedule (get-the-schedule)])
+;;   (bytes->file
+;;    (make-report-ods (schedule->allocations forecast-schedule months) months)
+;;    "example-report-to-finance.fods"))
