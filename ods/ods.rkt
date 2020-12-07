@@ -61,9 +61,8 @@ that an executable `zip` program is in the user's path.
                             #:blank-cols-before [blank-cols-before '()])
   (sxml-program  (list `(office:automatic-styles
                          (style:style (@ (style:family "table-row") (style:name "row-default"))
-                                      (style:table-row-properties (@ (style:use-optimal-row-height "true"))))
-                         ;  (style:style (@ (style:family "table-column") (style:name "col-default"))
-                         ;                (style:table-column-properties (@ (style:use-optimal-column-width "true"))))))))
+                                      (style:table-row-properties (@ (style:row-height "16pt")
+                                                                     (style:use-optimal-row-height "true"))))
                          ,@(column-styles (car (program-sheets program))))
                        `(office:body
                          ,@(map (curryr grid-sheet->sxml
@@ -78,6 +77,7 @@ that an executable `zip` program is in the user's path.
                                     (fo:padding-left "0.100cm")
                                     (fo:padding-right "0.100cm")
                                     (fo:padding-top "0.200cm"))))
+                               ; (style:text-properties (@ (fo:font-size "10pt") (fo:font-family "Arial"))))
                    (style:style (@ (style:family "table-cell") (style:name "plain") (style:parent-style-name "default")))
                    (style:style (@ (style:family "table-cell") (style:name "column-label") (style:parent-style-name "default"))
                                 (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
