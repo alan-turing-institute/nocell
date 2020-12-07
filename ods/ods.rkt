@@ -59,40 +59,42 @@ that an executable `zip` program is in the user's path.
 (define (grid-program->sxml program
                             #:blank-rows-before [blank-rows-before '()]
                             #:blank-cols-before [blank-cols-before '()])
-  (sxml-program `(office:body
-                  ,@(map (curryr grid-sheet->sxml
-                                 #:blank-rows-before blank-rows-before
-                                 #:blank-cols-before blank-cols-before)
-                         (program-sheets program)))  
-                (list '(office:styles
-                        (style:style (@ (style:family "table-cell") (style:name "default"))
-                                     (style:table-cell-properties
-                                      (@ (fo:padding-bottom "0.200cm")
-                                         (fo:padding-left "0.100cm")
-                                         (fo:padding-right "0.100cm")
-                                         (fo:padding-top "0.200cm"))))
-                        (style:style (@ (style:family "table-cell") (style:name "plain") (style:parent-style-name "default")))
-                        (style:style (@ (style:family "table-cell") (style:name "column-label") (style:parent-style-name "default"))
-                                     (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
-                                     (style:text-properties (@ (fo:font-weight "bold"))))
-                        (number:number-style (@ (style:name "positive") (style:volatile "true"))
-                                             (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
-                        (number:number-style (@ (style:name "negative") (style:volatile "true"))
-                                             (style:text-properties (@ (fo:color "#ff0000")))
-                                             (number:text "-")
-                                             (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
-                        (number:number-style (@ (style:name "n_output"))
-                                             (number:text "-    ")
-                                             (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
-                                             (style:map (@ (style:condition "value()<0") (style:apply-style-name "negative"))))
+  (sxml-program  (list `(office:automatic-styles
+                         (style:style (@ (style:family "table-row") (style:name "row-default"))
+                                      (style:table-row-properties (@ (style:use-optimal-row-height "true"))))
+                         ;  (style:style (@ (style:family "table-column") (style:name "col-default"))
+                         ;                (style:table-column-properties (@ (style:use-optimal-column-width "true"))))))))
+                         ,@(column-styles (car (program-sheets program))))
+                       `(office:body
+                         ,@(map (curryr grid-sheet->sxml
+                                        #:blank-rows-before blank-rows-before
+                                        #:blank-cols-before blank-cols-before)
+                                (program-sheets program))))
+                       
+                 '(office:styles
+                   (style:style (@ (style:family "table-cell") (style:name "default"))
+                                (style:table-cell-properties
+                                 (@ (fo:padding-bottom "0.200cm")
+                                    (fo:padding-left "0.100cm")
+                                    (fo:padding-right "0.100cm")
+                                    (fo:padding-top "0.200cm"))))
+                   (style:style (@ (style:family "table-cell") (style:name "plain") (style:parent-style-name "default")))
+                   (style:style (@ (style:family "table-cell") (style:name "column-label") (style:parent-style-name "default"))
+                                (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
+                                (style:text-properties (@ (fo:font-weight "bold"))))
+                   (number:number-style (@ (style:name "positive") (style:volatile "true"))
+                                        (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
+                   (number:number-style (@ (style:name "negative") (style:volatile "true"))
+                                        (style:text-properties (@ (fo:color "#ff0000")))
+                                        (number:text "-")
+                                        (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
+                   (number:number-style (@ (style:name "n_output"))
+                                        (number:text "-    ")
+                                        (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
+                                        (style:map (@ (style:condition "value()<0") (style:apply-style-name "negative"))))
                                            
-                        (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))
-                      `(office:automatic-styles
-                        (style:style (@ (style:family "table-row") (style:name "row-default"))
-                                     (style:table-row-properties (@ (style:use-optimal-row-height "true"))))
-                        ;  (style:style (@ (style:family "table-column") (style:name "col-default"))
-                        ;                (style:table-column-properties (@ (style:use-optimal-column-width "true"))))))))
-                        ,@(column-styles (car (program-sheets program))))))) ;relies on the program having one sheet
+                   (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))
+                 ))
                                
 
 ;; grid-sheet->sxml : sheet? [listof? integer?] -> pair?
@@ -526,8 +528,8 @@ that an executable `zip` program is in the user's path.
 (define (flat-sxml sxml-program)
   `(*TOP* ,NS ,PI
           (office:document ,TYPE
-                           ,@(sxml-program-styles sxml-program)
-                           ,(sxml-program-content sxml-program))))
+                           ,(sxml-program-styles sxml-program)
+                           ,@(sxml-program-content sxml-program))))
 
 (define (extended-sxml sxml-program)
   (list MIME 
@@ -538,12 +540,12 @@ that an executable `zip` program is in the user's path.
 (define (xml-content sxml-content)
   `(*TOP* ,NS ,PI
           (office:document-content ,TYPE
-                                   ,sxml-content)))
+                                   ,@sxml-content)))
   
 (define (xml-styles sxml-styles)
   `(*TOP* ,NS ,PI
           (office:document-styles ,TYPE
-                                  ,@sxml-styles)))
+                                  ,sxml-styles)))
 
 (define xml-manifest
   `(*TOP* ,NS ,PI
