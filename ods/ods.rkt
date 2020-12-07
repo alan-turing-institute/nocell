@@ -39,7 +39,7 @@ that an executable `zip` program is in the user's path.
 (provide
  (contract-out
   [sxml->ods (->* (sxml-program?)
-                  (#:type (or/c "f" "fods" "flat" "e" "extended" "ods"))
+                  (#:type (or/c 'ods 'fods))
                   bytes?)]
   [grid-program->sxml (->* (program?)
                            (#:blank-rows-before (listof integer?)
@@ -59,15 +59,44 @@ that an executable `zip` program is in the user's path.
 (define (grid-program->sxml program
                             #:blank-rows-before [blank-rows-before '()]
                             #:blank-cols-before [blank-cols-before '()])
-  (sxml-program `(office:body
-                  ,@(map (curryr grid-sheet->sxml
-                                 #:blank-rows-before blank-rows-before
-                                 #:blank-cols-before blank-cols-before)
-                         (program-sheets program)))  
-                '(office:styles
-                  (style:style))))
+  (sxml-program  (list `(office:automatic-styles
+                         (style:style (@ (style:family "table-row") (style:name "row-default"))
+                                      (style:table-row-properties (@ (style:row-height "16pt")
+                                                                     (style:use-optimal-row-height "true"))))
+                         ,@(column-styles (car (program-sheets program))))
+                       `(office:body
+                         ,@(map (curryr grid-sheet->sxml
+                                        #:blank-rows-before blank-rows-before
+                                        #:blank-cols-before blank-cols-before)
+                                (program-sheets program))))
+                       
+                 '(office:styles
+                   (style:style (@ (style:family "table-cell") (style:name "default"))
+                                (style:table-cell-properties
+                                 (@ (fo:padding-bottom "0.200cm")
+                                    (fo:padding-left "0.100cm")
+                                    (fo:padding-right "0.100cm")
+                                    (fo:padding-top "0.200cm"))))
+                   (style:style (@ (style:family "table-cell") (style:name "plain") (style:parent-style-name "default")))
+                   (style:style (@ (style:family "table-cell") (style:name "column-label") (style:parent-style-name "default"))
+                                (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
+                                (style:text-properties (@ (fo:font-weight "bold"))))
+                   (number:number-style (@ (style:name "positive") (style:volatile "true"))
+                                        (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
+                   (number:number-style (@ (style:name "negative") (style:volatile "true"))
+                                        (style:text-properties (@ (fo:color "#ff0000")))
+                                        (number:text "-")
+                                        (number:number (@ (number:decimal-places "2") (number:min-integer-digits "1"))))
+                   (number:number-style (@ (style:name "n_output"))
+                                        (number:text "-    ")
+                                        (style:map (@ (style:condition "value()>0") (style:apply-style-name "positive")))
+                                        (style:map (@ (style:condition "value()<0") (style:apply-style-name "negative"))))
+                                           
+                   (style:style (@ (style:family "table-cell") (style:name "output") (style:data-style-name "n_output"))))
+                 ))
+                               
 
-;; grid-sheet->sxml : sheet? [listof? integer?]  -> string?
+;; grid-sheet->sxml : sheet? [listof? integer?] -> pair?
 (define (grid-sheet->sxml sheet
                           #:blank-rows-before [blank-rows-before '()]
                           #:blank-cols-before [blank-cols-before '()])
@@ -76,6 +105,7 @@ that an executable `zip` program is in the user's path.
 
   `(office:spreadsheet
     (table:table
+     ,@(insert-columns sheet #:blank-cols-before blank-cols-before)
      ,@(for/fold ([row-list '()])
                  ([(row i) (in-indexed (sheet-rows sheet))])
          (let ([new-rows (append
@@ -87,28 +117,28 @@ that an executable `zip` program is in the user's path.
                                            #:blank-rows-before blank-rows-before
                                            #:blank-cols-before blank-cols-before)))])
            (append row-list new-rows))))))
-     
-  
-;; grid-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> string?
+   
+
+;; grid-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> pair?
 (define (grid-row->sxml row
                         i
                         #:cell-hash [cell-hash (hash)]
                         #:blank-rows-before [blank-rows-before '()]
                         #:blank-cols-before [blank-cols-before '()])
-  `(table:table-row
-    ,@(for/fold ([cell-list '()])
-                ([(cell j) (in-indexed row)])
-        (let ([new-cells (append
-                          (insert-cols-before j #:blank-cols-before blank-cols-before)
-                          (list
-                           (grid-cell->sxml cell
-                                            (indices i j)
-                                            #:cell-hash cell-hash
-                                            #:blank-rows-before blank-rows-before
-                                            #:blank-cols-before blank-cols-before)))])
-          (append cell-list new-cells)))))
+  `(table:table-row (@ (table:style-name "row-default"))
+                    ,@(for/fold ([cell-list '()])
+                                ([(cell j) (in-indexed row)])
+                        (let ([new-cells (append
+                                          (insert-cells-before j #:blank-cols-before blank-cols-before)
+                                          (list
+                                           (grid-cell->sxml cell
+                                                            (indices i j)
+                                                            #:cell-hash cell-hash
+                                                            #:blank-rows-before blank-rows-before
+                                                            #:blank-cols-before blank-cols-before)))])
+                          (append cell-list new-cells)))))
 
-;; grid-cell->sxml : cell? indices? [hash-of label? indices?] [listof? integer?]  -> string?
+;; grid-cell->sxml : cell? indices? [hash-of label? indices?] [listof? integer?]  -> pair?
 (define (grid-cell->sxml cell
                          pos
                          #:cell-hash [cell-hash (hash)]
@@ -117,7 +147,8 @@ that an executable `zip` program is in the user's path.
   (cond [(nothing? (cell-xpr cell))
          empty-cell]
         [else 
-         `(table:table-cell ,(grid-expression->sxml-attributes
+         `(table:table-cell (@ (table:style-name ,(style-cell (cell-attrs cell))))
+                            ,(grid-expression->sxml-attributes
                               (cell-xpr cell)
                               pos
                               #:cell-hash cell-hash
@@ -168,24 +199,72 @@ that an executable `zip` program is in the user's path.
                                 (cons 'error:undef "#N/A")
                                 (cons 'error:val "#N/A"))))
 
-          
 (define empty-row  '(table:table-row))
 (define empty-cell '(table:table-cell))
+(define empty-col '(table:table-column))
+
 
 ;;insert-rows-before : integer? [listof integer?] -> [listof string?]
 (define (insert-rows-before i #:blank-rows-before [blank-rows-before '()])
   (cond [(empty? blank-rows-before) '()]
+        [(> i (sub1 (length blank-rows-before))) '()] 
         [else (make-list (list-ref blank-rows-before i) empty-row)]))
 
+;;insert-cells-before : integer? [listof integer?] -> [listof string?]
+(define (insert-cells-before i #:blank-cols-before [blank-cols-before '()])
+  (cond [(empty? blank-cols-before) '()]
+        [(> i (sub1 (length blank-cols-before))) '()]
+        [else (make-list (list-ref blank-cols-before i) empty-cell)]))
 
+;;insert-cols-before : integer? [listof integer?] -> [listof string?]
 (define (insert-cols-before i #:blank-cols-before [blank-cols-before '()])
   (cond [(empty? blank-cols-before) '()]
-        [else (make-list (list-ref blank-cols-before i) empty-cell)]))
+        [(> i (sub1 (length blank-cols-before))) '()]
+        [else (make-list (list-ref blank-cols-before i) empty-col)]))
+
 
 
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Layout
+
+;;insert-columns : sheet? [listof integer?] -> [listof pair?]
+(define (insert-columns sheet
+                        #:blank-cols-before [blank-cols-before '()])
+  (define widths (column-widths sheet))
+  (for/fold ([col-list '()])
+            ([(width i) (in-indexed widths)])
+    (let ([new-cols (append
+                     (insert-cols-before i #:blank-cols-before blank-cols-before)
+                     (list
+                      `(table:table-column (@ (table:style-name
+                                               ,(string-append "col" (~a width)))))))])
+      (append col-list new-cols))))
+
+
+;;column-styles
+(define (column-styles sheet)
+  (define widths (remove-duplicates (column-widths sheet)))
+  (for/list ([width widths])
+    `(style:style (@ (style:family "table-column") (style:name ,(string-append "col" (~a width))))
+                  (style:table-column-properties
+                   (@ (style:column-width ,(string-append (~a width) "cm")))))))
+                     
+
+;; column-widths : sheet? positive? positive? -> [listof positive?] 
+;; Estimate column widths based on cell-content
+(define (column-widths sheet [default-width 1.5] [min-width 1])
+  (define cell-widths (for/list ([(row i) (in-indexed (sheet-rows sheet))])
+                        (for/list ([(cell j) (in-indexed row)])
+                          (cond [(string? (cell-xpr cell))
+                                 (cond [(member 'column-label (cell-attrs cell))
+                                        (max min-width (* (string-length (cell-xpr cell)) .22))]
+                                       [else
+                                        (max min-width (* (string-length (cell-xpr cell)) .18))])]
+                                [else default-width]))))
+  (define transposed (apply map list cell-widths))
+  (map (curry apply max) transposed))
+              
 
 ;; locate-labelled-cells : sheet? -> [hash-of label? indices?]
 ;; Determine the grid locations of labelled cells
@@ -205,7 +284,17 @@ that an executable `zip` program is in the user's path.
               (+ grid-index blanks-sum)]))
 
 
-
+;; style-cell : list? -> string?
+;;
+;; Takes the list of cell attributes and returns the name of the style
+;; for this cell, which should be one of a few styles hardcoded in the
+;; spreadsheet output
+(define (style-cell cell-attributes)
+  (cond
+    [(null? cell-attributes) "plain"]
+    [(member 'column-label cell-attributes) "column-label"]
+    [(member 'output cell-attributes) "output"]
+    [else (error "unknown style")]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; References
@@ -438,8 +527,8 @@ that an executable `zip` program is in the user's path.
 (define (flat-sxml sxml-program)
   `(*TOP* ,NS ,PI
           (office:document ,TYPE
-                           ,(sxml-program-content sxml-program)
-                           ,(sxml-program-styles sxml-program))))
+                           ,(sxml-program-styles sxml-program)
+                           ,@(sxml-program-content sxml-program))))
 
 (define (extended-sxml sxml-program)
   (list MIME 
@@ -450,7 +539,7 @@ that an executable `zip` program is in the user's path.
 (define (xml-content sxml-content)
   `(*TOP* ,NS ,PI
           (office:document-content ,TYPE
-                                   ,sxml-content)))
+                                   ,@sxml-content)))
   
 (define (xml-styles sxml-styles)
   `(*TOP* ,NS ,PI
@@ -475,15 +564,11 @@ that an executable `zip` program is in the user's path.
 
 ;;sxml->ods-bytes : sxml-program? -> bytes? 
 (define (sxml->ods sxml-program
-                   #:type [type "flat"])
+                   #:type [type 'fods])
   (cond
-    [(ormap (curry eq? type) '("flat" "fods" "f"))
-     (sxml->flat-ods-bytes sxml-program)]
-
-    [(ormap (curry eq? type) '("extended" "ods" "e"))
-     (sxml->extended-ods-bytes sxml-program)]
-      
-    [else (raise-user-error "unrecognised type")]))
+    [(eq? type 'fods) (sxml->flat-ods-bytes sxml-program)]
+    [(eq? type 'ods) (sxml->extended-ods-bytes sxml-program)]
+    [else (error "unrecognised type")]))
 
 ;;sxml->flat-ods-bytes : sxml-program? -> bytes?
 (define (sxml->flat-ods-bytes sxml-program)
@@ -541,104 +626,78 @@ that an executable `zip` program is in the user's path.
 (module+ test
   (require rackunit)
 
-  ;; Atomic values, number? string? boolean? error? nothing?
-
   ;; number?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 1)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
+   (grid-cell->sxml (cell 1 '()) 0)
+   '(table:table-cell
+     (@ (table:style-name "plain"))
+     (@ (office:value-type "float") (office:value "1"))))
   
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 42.0)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "42.0")))))))
+   (grid-cell->sxml (cell 42.0 '()) 0)
+   '(table:table-cell
+     (@ (table:style-name "plain"))
+     (@ (office:value-type "float") (office:value "42.0"))))
  
 
   ;; string?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell "")))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (office:value-type "string") (office:string-value "")))))))
+   (grid-cell->sxml (cell "" '()) 0)
+   '(table:table-cell
+     (@ (table:style-name "plain"))
+     (@ (office:value-type "string") (office:string-value ""))))
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell "hello")))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (office:value-type "string") (office:string-value "hello")))))))
+   (grid-cell->sxml (cell "hello" '()) 0)
+   '(table:table-cell
+     (@ (table:style-name "plain"))
+     (@ (office:value-type "string") (office:string-value "hello"))))
 
   
   ;; boolean?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell #t)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (office:value-type "boolean") (office:boolean-value "true")))))))
+   (grid-cell->sxml (cell #t '()) 0)
+   '(table:table-cell
+     (@ (table:style-name "plain"))
+     (@ (office:value-type "boolean") (office:boolean-value "true"))))
 
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell #f)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (office:value-type "boolean") (office:boolean-value "false")))))))
+   (grid-cell->sxml (cell #f '()) 0)
+   '(table:table-cell
+     (@ (table:style-name "plain"))
+     (@ (office:value-type "boolean") (office:boolean-value "false"))))
 
    
   ;; nothing?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'nothing)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell)))))
+   (grid-cell->sxml (cell 'nothing '()) 0)
+   '(table:table-cell))
 
   ;; error?
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:arg)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "#VALUE!")))))))
+   (grid-cell->sxml (cell 'error:arg '()) 0)
+   '(table:table-cell
+     (@ (table:style-name "plain"))
+     (@ (table:formula "#VALUE!"))))
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:arg)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "#VALUE!")))))))
+   (grid-cell->sxml (cell 'error:arg '()) 0)
+   '(table:table-cell 
+     (@ (table:style-name "plain"))
+     (@ (table:formula "#VALUE!"))))
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:undef)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "#N/A")))))))
+   (grid-cell->sxml (cell 'error:undef '()) 0)
+   '(table:table-cell 
+     (@ (table:style-name "plain"))
+     (@ (table:formula "#N/A"))))
 
   (check-equal?
-   (grid-sheet->sxml (sheet
-                      (list (list (cell 'error:val)))))
-   `(office:spreadsheet
-     (table:table
-      (table:table-row
-       (table:table-cell (@ (table:formula "#N/A")))))))
+   (grid-cell->sxml (cell 'error:val '()) 0)
+   '(table:table-cell 
+     (@ (table:style-name "plain"))
+     (@ (table:formula "#N/A"))))
 
   ;;date?
   (check-equal?
@@ -757,8 +816,8 @@ that an executable `zip` program is in the user's path.
   (define cell-refs (locate-labelled-cells
                      (sheet
                       (list
-                       (list (labelled-cell "1" "cellA1") (labelled-cell "2" "cellB1"))
-                       (list (labelled-cell "3" "cellA2") (labelled-cell "4" "cellB2"))))))
+                       (list (labelled-cell "1" '() "cellA1") (labelled-cell "2" '() "cellB1"))
+                       (list (labelled-cell "3" '() "cellA2") (labelled-cell "4" '() "cellB2"))))))
 
   (check-equal? cell-refs
                 (hash "cellA1" (indices 0 0)
@@ -788,8 +847,8 @@ that an executable `zip` program is in the user's path.
   (define cell-hash (locate-labelled-cells
                      (sheet
                       (list
-                       (list (labelled-cell "" "cell1") (cell "") (labelled-cell "" "cell3"))
-                       (list (labelled-cell "" "cell4") (labelled-cell "" "cell5") (cell ""))))))
+                       (list (labelled-cell "" '() "cell1") (cell "" '()) (labelled-cell "" '() "cell3"))
+                       (list (labelled-cell "" '() "cell4") (labelled-cell "" '() "cell5") (cell "" '()))))))
 
   (check-equal? cell-hash
                 (hash "cell1" (indices 0 0)
@@ -800,7 +859,7 @@ that an executable `zip` program is in the user's path.
 
   
   ;;cell-reference? absolute-location? test
-  (define absolute-cell (cell (cell-reference (absolute-location "cell5"))))
+  (define absolute-cell (cell (cell-reference (absolute-location "cell5")) '()))
 
   (check-equal?
    (grid-reference->openformula (cell-xpr absolute-cell) #:cell-hash cell-hash)
@@ -814,7 +873,7 @@ that an executable `zip` program is in the user's path.
 
   ;;cell-reference relative-location? test
   ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2")
-  (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4"))))
+  (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4")) '()))
   (check-equal?
    (grid-reference->openformula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
    "C2")
@@ -836,50 +895,52 @@ that an executable `zip` program is in the user's path.
   ;;multiple cells test
   (check-equal?
    (grid-sheet->sxml (sheet
-                      (list (list (cell 1)) (list (cell 2)))))
+                      (list (list (cell 1 '())) (list (cell 2 '())))))
    `(office:spreadsheet
      (table:table
+      (table:table-column (@ (table:style-name "col1.5")))
       (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "1"))))
+       (@ (table:style-name "row-default"))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "1"))))
       (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "2")))))))
+       (@ (table:style-name "row-default"))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "2")))))))
 
   ;;empty rows test
   (check-equal?
-   (grid-sheet->sxml (sheet (list (list (cell 1))))
+   (grid-sheet->sxml (sheet (list (list (cell 1 '()))))
                      #:blank-rows-before '(2))
    `(office:spreadsheet
      (table:table
+      (table:table-column (@ (table:style-name "col1.5")))
       (table:table-row)
       (table:table-row)
       (table:table-row
-       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
+       (@ (table:style-name "row-default"))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "1")))))))
 
 
   ;;empty cols test
   (check-equal?
-   (grid-sheet->sxml (sheet (list (list (cell 1))))
+   (grid-sheet->sxml (sheet (list (list (cell 1 '()))))
                      #:blank-cols-before '(2))
    `(office:spreadsheet
      (table:table
+      (table:table-column)
+      (table:table-column)
+      (table:table-column (@ (table:style-name "col1.5")))
       (table:table-row
+       (@ (table:style-name "row-default"))
        (table:table-cell)
        (table:table-cell)
-       (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
-  
-  
-  ;;grid-program->sxml test
-  (check-equal?
-   (grid-program->sxml (program
-                        (list
-                         (sheet
-                          (list (list (cell 1)))))))
-   (sxml-program
-    `(office:body
-      (office:spreadsheet
-       (table:table
-        (table:table-row
-         (table:table-cell (@ (office:value-type "float") (office:value "1")))))))
-    '(office:styles (style:style))))
+       (table:table-cell
+        (@ (table:style-name "plain"))
+        (@ (office:value-type "float") (office:value "1")))))))
                      
   ) 

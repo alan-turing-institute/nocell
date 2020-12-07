@@ -12,13 +12,14 @@ format (opens in both LibreOffice and Excel).
 Conversion of sexp to xml is implemented by @link["https://docs.racket-lang.org/sxml/index.html?q=sxml"]{sxml}.}
 
 @defproc[(sxml->ods [sxml-program sxml-program?]
-                    [#:type type (or/c "f" "fods" "flat" "e" "extended" "ods")])
+                    [#:type type (or/c 'fods 'ods)])
                   bytes?]
 
+If @italic{type} is @racket['fods], produces a bytes string (see also
+@racket[bytes?]) corresponding to the spreadsheet in the "flat" ODS
+file format.  If @italic{type} is @racket['ods], produces an
+"extended" ODS file (a zipped folder).
 
-Produces a bytes string (see also @racket[bytes?]) that corresponds to a single xml file if
- @italic{type} is one of "f", "fods" or "flat", and a zipped folder if
- @italic{type} is one of "e", "extended", or "ods".
 
 @margin-note{An ods file is a zipped folder with a .ods extension, containing with four files. 
   First, there is an uncompressed "mimetype" file. Then there are three compressed files: 
