@@ -77,7 +77,6 @@ that an executable `zip` program is in the user's path.
                                     (fo:padding-left "0.100cm")
                                     (fo:padding-right "0.100cm")
                                     (fo:padding-top "0.200cm"))))
-                               ; (style:text-properties (@ (fo:font-size "10pt") (fo:font-family "Arial"))))
                    (style:style (@ (style:family "table-cell") (style:name "plain") (style:parent-style-name "default")))
                    (style:style (@ (style:family "table-cell") (style:name "column-label") (style:parent-style-name "default"))
                                 (style:table-cell-properties (@ (fo:background-color "#DCDCDC")))
@@ -239,15 +238,15 @@ that an executable `zip` program is in the user's path.
                      (insert-cols-before i #:blank-cols-before blank-cols-before)
                      (list
                       `(table:table-column (@ (table:style-name
-                                               ,(string-append "col" (~a i)))))))])
+                                               ,(string-append "col" (~a width)))))))])
       (append col-list new-cols))))
 
 
 ;;column-styles
 (define (column-styles sheet)
-  (define widths (column-widths sheet))
-  (for/list ([(width i) (in-indexed widths)])
-    `(style:style (@ (style:family "table-column") (style:name ,(string-append "col" (~a i))))
+  (define widths (remove-duplicates (column-widths sheet)))
+  (for/list ([width widths])
+    `(style:style (@ (style:family "table-column") (style:name ,(string-append "col" (~a width))))
                   (style:table-column-properties
                    (@ (style:column-width ,(string-append (~a width) "cm")))))))
                      
@@ -899,7 +898,7 @@ that an executable `zip` program is in the user's path.
                       (list (list (cell 1 '())) (list (cell 2 '())))))
    `(office:spreadsheet
      (table:table
-      (table:table-column (@ (table:style-name "col0")))
+      (table:table-column (@ (table:style-name "col1.5")))
       (table:table-row
        (@ (table:style-name "row-default"))
        (table:table-cell
@@ -917,7 +916,7 @@ that an executable `zip` program is in the user's path.
                      #:blank-rows-before '(2))
    `(office:spreadsheet
      (table:table
-      (table:table-column (@ (table:style-name "col0")))
+      (table:table-column (@ (table:style-name "col1.5")))
       (table:table-row)
       (table:table-row)
       (table:table-row
@@ -935,7 +934,7 @@ that an executable `zip` program is in the user's path.
      (table:table
       (table:table-column)
       (table:table-column)
-      (table:table-column (@ (table:style-name "col0")))
+      (table:table-column (@ (table:style-name "col1.5")))
       (table:table-row
        (@ (table:style-name "row-default"))
        (table:table-cell)
