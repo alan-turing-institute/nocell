@@ -4,6 +4,7 @@
          "./namespaces.rkt"
          "../grid/grid.rkt"
          "../grid/builtins.rkt"
+         "../grid/eval.rkt"
          "./column-letters.rkt"
          racket/format
          racket/function
@@ -48,12 +49,14 @@ that an executable `zip` program is in the user's path.
   [bytes->file (-> bytes? string? exact-nonnegative-integer?)]))          
 
 
+;; temporary for eval.rkt
+(provide locate-labelled-cells
+         get-referent-indices)
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Conversion of grid program to sxml-program structure with content and styles.
 
 (struct sxml-program (content styles) #:transparent)
-(struct indices (row column) #:transparent)
 
 ;; grid-program->sxml : program? [listof? integer?] -> sxml-program?
 (define (grid-program->sxml program
@@ -266,15 +269,6 @@ that an executable `zip` program is in the user's path.
   (map (curry apply max) transposed))
               
 
-;; locate-labelled-cells : sheet? -> [hash-of label? indices?]
-;; Determine the grid locations of labelled cells
-(define (locate-labelled-cells sheet)
-  (for*/hash ([(row i) (in-indexed (sheet-rows sheet))]
-              [(cell j) (in-indexed row)]
-              #:when (labelled-cell? cell))
-    (values (labelled-cell-lbl cell)
-            (indices i j))))
-
 
 ;;get-output-index : indices? [listof integer?] -> integer?
 ;; map grid-index to outputted spreadsheet index along the given dimension
@@ -372,21 +366,6 @@ that an executable `zip` program is in the user's path.
                      (~a (add1 (indices-row pos))))
       "#N/A"))
    
-
-;; get-referent-indices : indices? relative-location? hash? -> indices?
-;; Apply relative location offset to current-position
-(define (get-referent-indices location current-position #:cell-hash cell-hash)
-  (define source-indices (hash-ref cell-hash (relative-location-source location)))
-  (define target-indices (hash-ref cell-hash (relative-location-target location)))
-
-  (define offset-row (- (indices-row target-indices) (indices-row source-indices)))
-  (define offset-column (- (indices-column target-indices) (indices-column source-indices)))
-
-  (define referent-row (+ (indices-row current-position) offset-row))
-  (define referent-column (+ (indices-column current-position) offset-column))
-
-  (indices referent-row referent-column))
-
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Formulas
