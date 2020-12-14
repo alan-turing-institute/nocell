@@ -6,7 +6,8 @@
          racket/function
          racket/contract
          racket/list
-         racket/match)
+         racket/match
+         racket/math)
 
 #| 
 
@@ -151,6 +152,8 @@ This module evaluates a Grid program.
     (apply fn
            (map evaluate-expression args)))
 
+  
+
   (define (format-app app)
     (let ([fn (application-fn app)]
           [args (application-args app)])
@@ -178,8 +181,32 @@ This module evaluates a Grid program.
         ['<= (apply-fn <= args)]
         ['>= (apply-fn >= args)]
         ['= (apply-fn = args)]
-        ['!= (apply-fn (not (= args)]
+        ['!= (apply-fn (lambda (x y) (not (= x y))) args)]
+        ;; unary trig
+        ['exp (apply-fn exp args)]
+        ['ln (apply-fn log args)]
+        ['sqrt (apply-fn sqrt args)]
+        ['acos (apply-fn acos args)]
+        ['asin (apply-fn asin args)]
+        ['atan (apply-fn atan args)]
+        ['cos (apply-fn cos args)]
+        ['sin (apply-fn sin args)]
+        ['tan (apply-fn tan args)]
+        ;; binary trig
+        ['expt (apply-fn expt args)]
+        ['log (apply-fn log args)]
+        ;; unary combin
+        ['factorial (apply-fn (lambda (x)
+                                (for/product ([n (reverse (for/list ([n x]) (add1 n)))])
+                                  n)) args)]
+        ;;logical
+        ['not (not (car args))]
+        ['and (and (car args) (cadr args))]
+        ['or (or (car args) (cadr args))]
+        ['if (if (car args) (cadr args) (caddr args))]
+        ;; date functions - TODO
         )))
+        
         
   ;;evaluate-expression : expression? -> atomic-value?  
   (define (evaluate-expression xpr)
