@@ -5,15 +5,17 @@
          racket/format
          racket/function
          racket/contract
-         racket/list)
+         racket/list
+         racket/match)
 
 #| 
 
 This module evaluates a Grid program.
 
 1. Interface
-2. Evaluation of applications and references to atomic values
-3. Utility functions for resolving references in Grid coordinates.
+2. Evaluation of references to atomic values
+3. Evaluation of applications to atomic values.
+4. Utility functions for resolving references in Grid coordinates.
 
 
 |#
@@ -27,14 +29,13 @@ This module evaluates a Grid program.
  (contract-out
   [locate-labelled-cells (-> sheet? hash?)]
   [get-referent-indices (-> relative-location? indices? #:cell-hash hash? indices?)]
- [struct indices
-   ([row exact-nonnegative-integer?]
-    [column exact-nonnegative-integer?])]))
+  [struct indices
+    ([row exact-nonnegative-integer?]
+     [column exact-nonnegative-integer?])]))
  
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Evaluation applications and references to atomic values
-
+;; Set up Grid program
 
 (struct indices (row column) #:transparent)
 
@@ -49,60 +50,68 @@ This module evaluates a Grid program.
   (define indices-cell (build-indices current-sheet)) 
   (sheet
    (for/list ([(row i) (in-indexed (sheet-rows current-sheet))])
-     (for/list ([(cell j) (in-indexed row)])
-     (evaluate-cell cell
-                    (indices i j)
-                    labels-indices
-                    indices-cell)))))
+     (for/list ([(current-cell j) (in-indexed row)])
+       (cell (evaluate-cell current-cell
+                            (indices i j)
+                            labels-indices
+                            indices-cell)
+             '())))))
 
-;;evaluate-cell : cell? -> cell?
+;;evaluate-cell : cell? -> atomic-value?
 (define (evaluate-cell current-cell
                        pos
                        labels-indices
                        indices-cell
                        [referee-chain '()])
   (cond [(circular-reference? referee-chain pos)  (raise-user-error (string-append
-                                                                "circular reference detected, referent: row "
-                                                                (~a (indices-row pos))
-                                                                ", column "
-                                                                (~a (indices-column pos))))]
+                                                                     "circular reference detected, referent: row "
+                                                                     (~a (indices-row pos))
+                                                                     ", column "
+                                                                     (~a (indices-column pos))))]
         [else
          (define xpr (cell-xpr current-cell))
-         (cond [(atomic-value? xpr) (cell xpr '())]
+         (cond [(atomic-value? xpr) xpr]
                [(reference? xpr) (evaluate-reference xpr
                                                      pos
                                                      labels-indices
                                                      indices-cell
                                                      (append referee-chain (list pos)))]
-               [(application? xpr) (raise-user-error "application not supprt")])]))
+               [(application? xpr) (evaluate-application xpr
+                                                         pos
+                                                         labels-indices
+                                                         indices-cell)])]))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Evaluate references
+
         
 
 ;; eq-indices? : indices? indices? -> boolean?
 (define (eq-indices? pos1 pos2)
-    (and
-     (= (indices-row pos1)  (indices-row pos2))
-     (= (indices-column pos1) (indices-column pos2))))
+  (and
+   (= (indices-row pos1)  (indices-row pos2))
+   (= (indices-column pos1) (indices-column pos2))))
 
 ;; circular-reference? [listof indices?] indices? -> boolean?
 (define (circular-reference? referee-chain current-referent)
   (cond [(empty? referee-chain) #f]
         [else (ormap (curry eq-indices? current-referent) referee-chain)]))
 
-;;evaluate-reference : expression? indices? [hash-of label? indices?] -> cell?
+;;evaluate-reference : expression? indices? [hash-of label? indices?] -> atomic-value?
 (define (evaluate-reference xpr [pos (indices 0 0)]
-                                [labels-indices (hash)]
-                                [indices-cell (hash)]
-                                [referee-chain '()])
+                            [labels-indices (hash)]
+                            [indices-cell (hash)]
+                            [referee-chain '()])
 
   (cond
     [(cell-reference? xpr)
      (let* ([referent-pos (resolve-location (cell-reference-loc xpr)
                                             pos
                                             labels-indices)]
-           [referent-cell
-            (cond [referent-pos
-                   (hash-ref indices-cell referent-pos)]
-                  [else (cell 'error:undef '())])])
+            [referent-cell
+             (cond [referent-pos
+                    (hash-ref indices-cell referent-pos)]
+                   [else (cell 'error:undef '())])])
        (evaluate-cell referent-cell
                       referent-pos
                       labels-indices
@@ -132,12 +141,67 @@ This module evaluates a Grid program.
 ;; ---------------------------------------------------------------------------------------------------
 ;; Evaluate Formulas
 
-(define (evaluate-application xpr pos labels)
-  (display "here"))
-  
+(define (evaluate-application app
+                              [pos (indices 0 0)]
+                              [labels-indices (hash)]
+                              [indices-cell (hash)])
+
+
+  (define (apply-fn fn args)
+    (apply fn
+           (map evaluate-expression args)))
+
+  (define (format-app app)
+    (let ([fn (application-fn app)]
+          [args (application-args app)])
+      (match fn
+        ;; binary basic math
+        ['+ (apply-fn + args)]
+        ['- (apply-fn - args)]
+        ['* (apply-fn * args)]
+        ['/ (apply-fn / args)]
+        ['quotient (apply-fn quotient args)]
+        ['remainder (apply-fn remainder args)]
+        ['modulo (apply-fn modulo args)]
+        ;;unary basic maths
+        ['neg (apply-fn - args)]
+        ['abs (apply-fn abs args)]
+        ['sgn (apply-fn sgn args)]
+        ['inv (apply-fn (curry / 1) args)]
+        ['floor (apply-fn floor args)]
+        ['ceiling (apply-fn ceiling args)]
+        ['truncate (apply-fn truncate args)]
+        
+        ;;binary comparison
+        ['> (apply-fn > args)]
+        ['< (apply-fn < args)]
+        ['<= (apply-fn <= args)]
+        ['>= (apply-fn >= args)]
+        ['= (apply-fn = args)]
+        ['!= (apply-fn (not (= args)]
+        )))
+        
+  ;;evaluate-expression : expression? -> atomic-value?  
+  (define (evaluate-expression xpr)
+    (cond [(atomic-value? xpr) xpr]
+          [(reference? xpr) (evaluate-reference xpr
+                                                pos
+                                                labels-indices
+                                                indices-cell)]
+          [(application? xpr) (evaluate-application app
+                                                    pos
+                                                    labels-indices
+                                                    indices-cell)]))
+
+  (if (not (builtin? (application-fn app)))
+      (raise-user-error (string-append (~a (application-fn app) " function not in builtins"))) 
+      (format-app app)))
+          
+          
+     
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Resolving references
+;; Utility functions for resolving references
   
 ;; locate-labelled-cells : sheet? -> [hash-of label? indices?]
 ;; Determine the grid locations of labelled cell
@@ -171,28 +235,16 @@ This module evaluates a Grid program.
 
   (indices referent-row referent-column))
 
- #|
-
-To do the full evaluation you need to chase cell references through grid, which requires one to be able
-to get the full cell from the indices, since the full cell might itself contain a cell-reference which one
-needs to evaluate.
-
-Also you need to check for circular arguments somehow (cells referencing each other) because this could send the program into an infinite loop.
-
-However, you also need to keep track of the current indices, which may not be from a labeled cell, in order to
-do relative references. 
-
-Need to keep attributes
-
-|#
+;; ---------------------------------------------------------------------------------------------------
+;; Tests
 
 (module+ test
   (require rackunit)
 
   ;sheet with atomic values
-   (define sheet-atomic (sheet
-                         (list
-                          (list (labelled-cell 1 '() "cellA1") (labelled-cell 2 '() "cellB1")))))
+  (define sheet-atomic (sheet
+                        (list
+                         (list (labelled-cell 1 '() "cellA1") (labelled-cell 2 '() "cellB1")))))
                      
 
   (check-equal? (locate-labelled-cells sheet-atomic)
@@ -224,11 +276,11 @@ Need to keep attributes
                       (list
                        (list (labelled-cell 1 '() "cell1")
                              (cell (cell-reference (absolute-location "cell1")) '())))))
-   (check-equal? (evaluate-sheet sheet-refs)
-                 (sheet
-                  (list
-                   (list (cell 1 '())
-                         (cell 1 '())))))
+  (check-equal? (evaluate-sheet sheet-refs)
+                (sheet
+                 (list
+                  (list (cell 1 '())
+                        (cell 1 '())))))
 
   (check-exn
    exn:fail:user?
@@ -240,7 +292,11 @@ Need to keep attributes
                (cell-reference (absolute-location "cell2")) '() "cell1")
               (labelled-cell
                (cell-reference (absolute-location "cell1")) '() "cell2"))))))
-   ")
+   "circular reference detected, referent: row 0, column 0")
+
+
+  (check-equal?
+   (evaluate-sheet (sheet (list (list (cell (application '+ '(3 2)) '())))))
+   (sheet (list (list (cell 5 '())))))
   )
-  
   
