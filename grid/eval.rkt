@@ -32,7 +32,8 @@ This module evaluates a Grid program.
   [get-referent-indices (-> relative-location? indices? #:cell-hash hash? indices?)]
   [struct indices
     ([row exact-nonnegative-integer?]
-     [column exact-nonnegative-integer?])]))
+     [column exact-nonnegative-integer?])]
+  [evaluate-grid-program (-> program? program?)]))
  
 
 ;; ---------------------------------------------------------------------------------------------------
