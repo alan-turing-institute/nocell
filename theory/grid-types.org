@@ -1,0 +1,295 @@
+#+title: Grid types
+#+options: toc:nil
+#+LaTeX_HEADER: \newcommand{\gr}[1]{\mathfrak{#1}}
+#+LaTeX_HEADER: \newcommand{\GG}{\gr{G}}
+#+LaTeX_HEADER: \newcommand{\VV}{\mathbb{V}}
+#+LaTeX_HEADER: \newcommand{\R}{\mathbb{R}}
+#+LaTeX_HEADER: \newcommand{\void}{\mathbf{0}}
+#+LaTeX_HEADER: \newcommand{\unit}{\mathbf{1}}
+#+LaTeX_HEADER: \DeclareMathOperator{\reduce}{reduce}
+#+LaTeX_HEADER: \DeclareMathOperator{\map}{map}
+#+LaTeX_HEADER: \DeclareMathOperator{\zipWith}{zipWith}
+#+LaTeX_HEADER: \DeclareMathOperator{\fold}{fold}
+#+LaTeX_HEADER: \DeclareMathOperator{\scan}{scan}
+
+
+
+* Introduction
+
+Our language Cell exports a `generalised spreadsheet,' which is then processed
+by Grid to produce an actual spreadsheet. This note is an attempt to describe a
+possible definition for a `generalised spreadsheet.'
+
+The language Remora
+cite:slepak:array:2014,remora:intro:2019,slepak:semantics:2019 resurrects the
+idea of array-based programming that started with APL and J. Arrays look ideal
+as a kind of grid-like data structure with which to generalise the
+two-dimensional spreadsheet grid. However, to be usable as a spreadsheet, the
+structure used by Grid must support expressions, which typically don't have the
+form of a Remora-type array.
+
+Recently Gibbons cite:gibbons:aplicative:2017 generalised Remora's arrays to
+what he calls `applicative, Naperian functors.' These are essentially container
+types which support traversals, for which there is an `index' type such that
+values of the container type are representable as maps from the index type to
+the thing contained. For example, vectors of int of length 5 are equivalent to
+maps from the set \((0, 1, 2, 3, 4)\) to the ints. The nice thing about these
+types is that they seem to suport all the nice things one would want of arrays
+(folds and so on) and are `lineariseable.'
+
+It looks like applicative, Naperian functors are sufficiently general to
+suppport expressions. However, they come with an awful lot of PL theory
+machinery. 
+
+
+
+
+
+
+* Grid types
+
+Roughly, index types are going to be ‘ordered finite sets,’ except that we
+‘remember how they were made.’ We shall call such a type a /grid/.
+
+We say that two grids, $\gr{G}$ and $\gr{H}$, are `isomorphic,' written
+$\gr{G}\sim \gr{H}$, if there is a bijection between the values of two grids
+that respects the ordering of the values.
+
+We are going to define grids inductively; that is, by building up from certain
+base cases. I'd rather just say what they are but I can't figure out how to do
+that.
+
+** Basic grids
+
+Fix, once and for all, a set /S/ of /scalars/. 
+
+There is a grid $\void$ (‘null’). There are no maps from this type (and no
+values of this type). (MAYBE: Any element of $S$ is a grid isomorphic to
+$\void$?)
+
+There is a grid $\unit$ (‘unit’). A map $\unit\to S$ is an element of $S$. There
+is one value of this type, written ‘0’.
+
+There are countably many distinct grids isomorphic to any grid. (How do we get
+hold of one, then?)
+
+** Sum and product types
+
+For $(\GG_1, \GG_2, \dots, \GG_N)$ a tuple of grids, there is a grid $\Sigma =
+\bigoplus_i \GG_i$. For any $X$, a map $\Sigma\to X$ is an \(N\)-tuple of maps
+$(f_1, f_2, \dots, f_N)$, where $f_i$ is a map $\GG_i\to X$. Equivalently, a
+value of type $\Sigma$ is a pair $(i, \gr{g}_i)$ where $i\in \{0, \dots, N-1\}$
+and $\gr{g}_i$ is a value of type $\GG_i$. The order of values is the dictionary
+order on $(i, \gr{g}_i)$ (that is, first by $i$, then by $\gr{g}_i$).
+
+The empty sum is *0* and $\GG\oplus\void \sim \GG$.
+
+For $(\GG_1, \GG_2, \dots, \GG_N)$ a tuple of grids, there is a grid $\Pi =
+\bigotimes_i \GG_i$. For any $X$, a map $\Pi\to X$ is a map $\GG_1\to (\GG_2\to
+(\dotsm (\GG_N \to X))\dotsm )$. Equivalently, a value of type $\Pi$ is a tuple
+$(\gr{g}_1, \gr{g}_2, \dots, \gr{g}_N)$ where $\gr{g}_i$ is a value of type
+$\GG_i$. There is an order to the values, which is dictionary order on the
+tuples. (Later elements change fastest.)
+
+The empty product is $\unit$ and $\GG\otimes\unit \sim \GG$. Also,
+$\GG\otimes\void \sim \void$. 
+
+I don't really understand why $\oplus$ ‘remembers’ its structure but $\otimes$
+does not. (Or even whether that claim is true, or indeed whether it makes
+sense. I think we may be conflating maps with elements of map types. If it is
+true, then we can restrict to binary products.)
+
+** Vectors and arrays
+
+A /vector/ is a map $v : \GG\to S$ for some grid $\GG$. We say that $v$ is of
+type ‘vector over $\GG$,’ written and write this type as $S^\GG$. By such a map,
+we mean an assignment of a scalar to every value of type $\GG$. So, for example,
+supposing $\GG = (\unit\oplus\unit) \oplus \unit$, there are three values of
+type $\GG$, not two; even though this particular $\GG$ is a binary
+sum. Equivalently, a map $(\unit\oplus\unit) \oplus \unit\to S$ is a pair of
+maps: one $\unit\oplus\unit\to S$ and one $\unit\to S$. The former is of course
+itself a pair of maps.
+
+The idea here is that sum-type grids are the index types for vectors. Normally,
+one introduces only a binary sum and then sums of greater numbers of types are
+made up of repeated binary sums. However, we want vectors like ~[10 20 30]~, and
+we don't want to think of this as either ~[10 [20 30]]~ or ~[ [10 20] 30]~.  So
+there's a sense in which the kind of vectors we want are ‘associative.’ On the
+other hand, we would /also/ like ‘vectors’ like ~[10 [20 30]]~. An ‘associative
+vector’ is a map, say, $\bigoplus(\unit, \unit, \unit)\to S$, whereas the
+previous example is a map $\unit\oplus (\unit\oplus \unit)\to S$.
+
+*** Lifting functions to arrays
+
+Let $\GG$ be a grid and $\alpha:\GG\to S$ a vector. Suppose $f:S\to S$ is some
+unary function on scalars. Then we can ‘lift’ $f$ to a function on vectors by
+function composition: $f(\alpha) = f\circ\alpha$.
+
+Suppose $\alpha$ and $\beta$ are vectors $\GG\to S$. We obtain a function
+$\alpha\otimes\beta : \GG\to S\times S$. Namely, for each $\mathfrak{g}\in \GG$,
+form the pair $(\alpha(\mathfrak{g}), \beta(\mathfrak{g}))$. Thus, given a
+binary function $h : S\times S\to S$, we can likewise lift this function to
+vectors by function composition: $h(\alpha, \beta) = h\circ
+(\alpha\otimes\beta)$. This function is known as /zip-with/.
+
+Suppose $\alpha : \gr{G}\to S$ and $\beta : \gr{H}\to S$ are vectors. We obtain
+a vector $(\alpha\oplus\beta) : \gr{G}\oplus\gr{H}\to S$. Namely, an element of
+$\gr{G}\oplus\gr{H}$ is either an element of $\gr{G}$ or an element of
+$\gr{H}$. If the former, apply $\alpha$; if the latter, apply $\beta$. 
+
+An /array/ is a vector of the form $\gr{G}\otimes\gr{H}\to S$. (TODO: Maybe it's
+a vector of the form $\bigotimes_i \gr{G}_i\to S$?) Note that by definition of
+$\otimes$, the array $\alpha$ is equivalent to a map with domain $\gr{G}$ and
+range $S^\gr{H}$. That is, an array is ‘a sequence of vectors all of the same
+shape.’
+
+Suppose $f:S^\gr{H}\to X$ is function that takes vectors over $\gr{H}$ to
+some $X$ (which we leave open for now). Given an array $\alpha : \gr{G}\otimes
+\gr{H}\to S$, that is, a map $\alpha : \gr{G}\to S^\gr{H}$, we lift $f$ to
+such arrays, again by function composition.
+ 
+What kind of thing could $X$ be? One obvious possibility is $S$: for example, if
+the function is ‘sum.’ But it could also be some other vector: for example, if
+the function computes the prefix sums. 
+
+*** Reductions and folds
+
+A  /first-order  function/  is  one  whose  domain  and  range  are  scalars  or
+vectors. (TODO: Probably an element of $S$  counts as a vector?) The above shows
+how, given first-order functions on  scalars, one can make first-order functions
+on vectors which don't change the underlying grid. (Note that mapping produces a
+vector of the same `shape' as the input.)
+
+Every grid is either a sum or a product. So the question reduces to the
+operations that one might imagine on sums or products. 
+
+Suppose $\gr{G} = \bigoplus_{i = 1}^N \gr{G}_i$ is a sum. If $f$ is an \(N\)-ary
+function, whose \(i\)th argument is a vector over $\gr{G}_i$, then we can apply
+$f$ immediately to a vector over $\gr{G}$.
+
+Consider the particular case where $f$ is a binary, associative operator -- that
+is $f(f(x, y), z) = f(x, f(y, z))$ and both arguments of $f$ are of the same
+type. In this case we can apply $f$ to any /array/ whose ‘elements have the
+appropriate type.’ That operation is called /reduce/.
+
+On the other hand, if $f$ is a binary operator, not necessarily associative,
+then we can apply it recursively to a ‘list of pairs’ type. This operation is
+/fold/.
+
+(Note: Are we asserting that /all/ operations on sum types must be associative?)
+
+TODO: /scan/ and /trace/. 
+
+TODO: /replicate/
+
+*** Transposition
+
+$\gr{G}\otimes\gr{H}$ is clearly not the same grid as
+$\gr{H}\otimes\gr{G}$. However, there is clearly a correspondence between a
+vector $\gr{G}\otimes\gr{H}\to S$ and a vector $\gr{H}\otimes\gr{G}\to
+S$; namely, given a pair $(\gr{h}, \gr{g})$, reverse the order and apply the
+given vector. This operation is called /transposition/. 
+
+** The nature of polymorphism
+
+The polymorphism so far -- ‘rank polymorphism’ -- is all that which arises from
+function composition. If I have a function $f:B\to X$, then, for any function
+$A\to B$ I get a function $A\to X$. It's sort of ‘polymorphic in $A$’:
+
+$$
+\forall A, (f\circ) : (A\to B)\to (A\to X)
+$$
+
+Reduction is similar but changes the structure. It applies to a map from any
+sum-type to a particular type and returns a value of that particular type. Eg,
+~(reduce +)~ applies to any $A\to\R$, producing an $\R$, because
+\(+:\R\times\R\to\R\):
+
+$$
+\forall A, (\operatorname{reduce}\, +) : (A \to \R)\to \R.
+$$
+
+However, there is some ambiguity. 
+
+Suppose $\gr{A}$ and $\gr{B}$ are grids, and $\alpha : \gr{A}\otimes\gr{B}\to\R$
+is an array. The domain of $\alpha$ is not a sum type, so we can't reduce
+directly. Here are three ways we might interpret the application of reduction. 
+
+1. We might interpret $\gr{A}\otimes\gr{B}$ as 
+
+   $$
+   \gr{A}\otimes\gr{B} \sim \bigoplus_{\gr{A}, \gr{B}} \unit  
+   $$
+
+   and then apply reduce. In other words “sum over all elements of the
+   two-dimensional array.” My sense is that this is not the typical
+   interpretation; perhaps because the same outcome can be achieved by doing the
+   next two things in sucession.
+
+2. We might interpret the type of $\alpha$ as
+
+   $$
+   \gr{A}\otimes\gr{B}\to\R \sim \gr{A} \to (\gr{B}\to \R),
+   $$
+
+   instantiate $(\reduce +)$ at $\gr{B}\to\R$, and apply function
+   composition. In other words, we reduce “each of the inner vectors of
+   $\alpha$,” leaving a vector over the same grid as $\alpha$.
+
+   I think this is the default for reduction, corresponding to “find the cell
+   and map over the frame” approach of Remora.
+
+3. Finally, we might “lift” $+$ from $\R\times \R$ to $X\otimes X$, where $X =
+   \gr{B}\to\R$ by using $\zipWith$. Now we can instantiate the reduction at
+   $\gr{A}\to X$ 
+
+The last approach is often explained by using transposition, but there was no
+transposition here. Is there an identity, perhaps? Something along the lines of:
+
+$$
+(\reduce +) \circ \operatorname{transpose} = (\reduce (\zipWith +)) ? 
+$$
+
+* Using arrays to represent first-order expressions
+
+A /first-order array function/ is a grid, $\gr{G}$, and a map $f: (\gr{G}\to
+S)\to S$. That is, it's a map from arrays over a certain grid to scalars. 
+
+For example, $\operatorname{add}_2 : (\mathbf{2}\to S)\to S$ is a first-order
+array function which acts on vectors of length 2 (by adding up their values):
+$$
+\operatorname{add}_2([10\; 20]) = 30.
+$$ 
+Notice that the value is a scalar, not an array of length 1.
+
+We assume here that first-order array functions are simply given as set $B$ of
+built-ins.  (In reality, one constructs them from functions on scalars applied
+to values at particular grid indices.) We enlarge $S$ (the scalars) by the set
+of built-ins: $S^* = S\cup B$.
+
+TODO: $(\reduce +)$ at $\mathbf{4}$ (say) is also a first-order array function.  
+
+We assume the existence of a grid $\gr{F}\sim\unit$. An /array expression/ is
+either:
+- an array of $S$; or
+- an array of type $\gr{F}\oplus\gr{G}\to S^*$; where the first element
+  $\gr{F}\to B$ is a first-order array function of type $\gr{G}\to S$; or
+- an array of type $\gr{F}\oplus\gr{G}\to X$ where $X$ is an array expression.
+
+Array expressions are /evaluated/ to produce arrays. The value of an array of
+$S$ is just that array. The value of an expression whose first element is a
+first-order function is obtained by evaluating the remainder and then applying
+that first-order function.
+
+* Possible Racket-y syntax version
+
+
+* References
+
+<<bibliographystyle link>>
+bibliographystyle:unsrt
+
+<<bibliography link>>
+bibliography:nocell.bib
+
+
