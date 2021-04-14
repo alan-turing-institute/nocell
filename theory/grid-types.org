@@ -39,67 +39,100 @@ types is that they seem to suport all the nice things one would want of arrays
 
 It looks like applicative, Naperian functors are sufficiently general to
 suppport expressions. However, they come with an awful lot of PL theory
-machinery. 
+machinery. Instead, in this note, we propose to start from the index types, and
+build up arrays from there. The hope is that, first, all the properties we want
+will be captured by some simple properties of the index types; and, second, that
+this will provide a sufficiently rich set of array-like structures to capture
+everything we need for Grid.
+
+
+* Grids and arrays
+
+A /grid/ is a totally ordered, finite set. If $\GG$ is a grid, we denote the
+ordering on $\GG$ by $<$ where there is no confusion as to which grid the order
+refers. Two grids, $\gr{G}$ and $\gr{H}$, are /isomorphic/, written $\gr{G}\sim
+\gr{H}$, if there is an order-preserving bijection between them. It is clear that
+all grids are isomorphic to one of the bounded naturals, \((0, 1, \dotsc, N-1)\)
+for some $N$. (Proof?)
+
+We write $\void$ for the empty grid; $\mathbf{1}$ for the grid $(0)$; and in
+general $\mathbf{n}$ for the grid $(0, 1, \dotsc, n-1)$. 
+
+Fix, once and for all, a set $S$ of /primitives/. An /array of rank 0/ is an
+element of $S$. An /array of rank $n$/ is a map from a grid to an array of rank
+$n-1$. (Thus an array of rank 1 is a map from a grid to $S$.)
+
+Let $(\GG_1, \GG_2, \dots, \GG_N)$ be a tuple of grids. The /direct sum/,
+$\bigoplus_i \GG_i$, is a grid such that
+1. The set $\bigoplus_i \GG_i$ is the disjoint union of the $\GG_i$;
+2. $g<h$ in $\bigoplus \GG_i$ if either (i) $g, h\in \GG_i$ for some $i$ and $g<h$
+   in $\GG_i$ or (ii) $g\in\GG_i$ and $h\in\GG_j$ and $i < j$.
+That is, the direct sum is what you get if you `line up the component grids in
+order.' We write the direct sum of two grids $\gr{G}$ and $\gr{H}$ as $\gr{G}\oplus
+\gr{H}$. For any grid, $\GG\oplus\void \sim \GG$. Furthermore,
+$\bigoplus_{i=1}^n \mathbf{1} \sim \mathbf{n}$. 
+
+For any $X$, a map $\bigoplus \GG_i\to X$ is an \(N\)-tuple of maps $(f_1, f_2,
+\dots, f_N)$, where $f_i : \GG_i\to X$.
+
+Let $(\GG_1, \GG_2, \dots, \GG_N)$ be a tuple of grids as before. The /direct
+product/, $\bigotimes_i \GG_i$, is a grid such that
+1. The set $\bigotimes_i \GG_i$ is the Cartesian product of the $\GG_i$; /i.e./,
+   the set of tuples $(g_1, g_2, \dotsc, g_N)$ where $g_i\in\GG_i$;
+2. $(g_1, g_2, \dotsc, g_N) < (h_1, h_2, \dotsc, h_N)$ iff there is some
+   $k\in\{1, \dotsc, N\}$ such that (i) $g_i = h_i$ for all $i<k$; and (ii) $g_k<h_k$. 
+That is, the direct product is the Cartesian product with `dictionary order' on
+the elements. We write the direct product of two grids, $\gr{G}$ and $\gr{H}$ as
+$\gr{G}\otimes\gr{H}$. The empty product is $\unit$; $\GG\otimes\unit\sim \GG$;
+and $\GG\otimes\void \sim \void$.
+
+For any $X$, a map $\bigotimes_i\GG_i \to X$ is a map $\GG_1\to (\GG_2\to
+(\dotsm (\GG_N \to X))\dotsm )$.
+
+A grid in Cell is either $\void$, $\unit$, or a direct sum or a direct product. 
+
+The kinds of arrays found in Remora are a subclass of what we are calling arrays
+here. A rank 1 Remora array is specifically a map $\mathbf{n}\to S$ for some
+grid $\mathbf{n}$. Rank 2 Remora arrays are maps from $\mathbf{m}$ to a rank 1
+Remora array; and so on. Thus the type of a Remora array is always specified
+completely by the list of integers $m, n, \dotsc$.
+
+Remora arrays are clearly arrays but the converse is not necessarily
+true. Consider the map $\mathbf{3}\to S$ whose values on the elements of
+$\mathbf{3}$ are 10, 20, and 30, in that order. This is a rank 1 Remora array,
+written ~[10 20 30]~. Likewise, consider the array ~[40 50]~, which is a map
+$\mathbf{2}\to S$. What can we say about some map $\mathbf{3}\oplus\mathbf{2}\to
+S$? By our definitions, that is an array; it is equivalent to a pair of maps,
+one of type $\mathbf{3}\to S$ and one of type $\mathbf{2}\to S$. We might
+reasonably write an example of this type as ~[[10 20 30] [40 50]]~. But this is
+not a Remora array: a Remora array can't contain arrays of different length.
+
+It is true that $\mathbf{3}\oplus\mathbf{2}$ is isomorphic to $\mathbf{5}$.
+Remora has an /append/ function, so that, for example ~(append [10 20 30] [40
+50])~ is valid Remora and evaluates to ~[10 20 30 40 50]~. But isomorphism (in
+the sense we defined it above) is not identity.
+
+This is why it 
+
+a x (b + c)
+well, a x (b + c) -> A
+is a -> (b+c) -> A
+is a -> (b->A, c->A)
+is (a->b->A, a->c->A)
+is (a x b -> A, a x c -> A)
+is (a x b + a x c) -> A
+(a + b) x c
+well, (a + b) x c -> A
+is (a+b) -> c -> A
+is (a -> c -> A, b -> c -> A)
+is (a x c -> A, b x c -> A)
+is (a x c + b x c) -> A
 
 
 
 
+* OLD: Being re-thought.
 
-
-* Grid types
-
-Roughly, index types are going to be ‘ordered finite sets,’ except that we
-‘remember how they were made.’ We shall call such a type a /grid/.
-
-We say that two grids, $\gr{G}$ and $\gr{H}$, are `isomorphic,' written
-$\gr{G}\sim \gr{H}$, if there is a bijection between the values of two grids
-that respects the ordering of the values.
-
-We are going to define grids inductively; that is, by building up from certain
-base cases. I'd rather just say what they are but I can't figure out how to do
-that.
-
-** Basic grids
-
-Fix, once and for all, a set /S/ of /scalars/. 
-
-There is a grid $\void$ (‘null’). There are no maps from this type (and no
-values of this type). (MAYBE: Any element of $S$ is a grid isomorphic to
-$\void$?)
-
-There is a grid $\unit$ (‘unit’). A map $\unit\to S$ is an element of $S$. There
-is one value of this type, written ‘0’.
-
-There are countably many distinct grids isomorphic to any grid. (How do we get
-hold of one, then?)
-
-** Sum and product types
-
-For $(\GG_1, \GG_2, \dots, \GG_N)$ a tuple of grids, there is a grid $\Sigma =
-\bigoplus_i \GG_i$. For any $X$, a map $\Sigma\to X$ is an \(N\)-tuple of maps
-$(f_1, f_2, \dots, f_N)$, where $f_i$ is a map $\GG_i\to X$. Equivalently, a
-value of type $\Sigma$ is a pair $(i, \gr{g}_i)$ where $i\in \{0, \dots, N-1\}$
-and $\gr{g}_i$ is a value of type $\GG_i$. The order of values is the dictionary
-order on $(i, \gr{g}_i)$ (that is, first by $i$, then by $\gr{g}_i$).
-
-The empty sum is *0* and $\GG\oplus\void \sim \GG$.
-
-For $(\GG_1, \GG_2, \dots, \GG_N)$ a tuple of grids, there is a grid $\Pi =
-\bigotimes_i \GG_i$. For any $X$, a map $\Pi\to X$ is a map $\GG_1\to (\GG_2\to
-(\dotsm (\GG_N \to X))\dotsm )$. Equivalently, a value of type $\Pi$ is a tuple
-$(\gr{g}_1, \gr{g}_2, \dots, \gr{g}_N)$ where $\gr{g}_i$ is a value of type
-$\GG_i$. There is an order to the values, which is dictionary order on the
-tuples. (Later elements change fastest.)
-
-The empty product is $\unit$ and $\GG\otimes\unit \sim \GG$. Also,
-$\GG\otimes\void \sim \void$. 
-
-I don't really understand why $\oplus$ ‘remembers’ its structure but $\otimes$
-does not. (Or even whether that claim is true, or indeed whether it makes
-sense. I think we may be conflating maps with elements of map types. If it is
-true, then we can restrict to binary products.)
-
-** Vectors and arrays
 
 A /vector/ is a map $v : \GG\to S$ for some grid $\GG$. We say that $v$ is of
 type ‘vector over $\GG$,’ written and write this type as $S^\GG$. By such a map,
