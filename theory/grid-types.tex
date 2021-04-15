@@ -39,10 +39,7 @@
 
 \maketitle
 
-
-
 \section{Introduction}
-\label{sec:org37b3f04}
 
 Our language Cell exports a `generalised spreadsheet,' which is then processed
 by Grid to produce an actual spreadsheet. This note is an attempt to describe a
@@ -66,7 +63,7 @@ types is that they seem to suport all the nice things one would want of arrays
 (folds and so on) and are `lineariseable.'
 
 It looks like applicative, Naperian functors are sufficiently general to
-suppport expressions. However, they come with an awful lot of PL theory
+suppport expressions. However, they come with an awful lot of PL
 machinery. Instead, in this note, we propose to start from the index types, and
 build up arrays from there. The hope is that, first, all the properties we want
 will be captured by some simple properties of the index types; and, second, that
@@ -74,22 +71,23 @@ this will provide a sufficiently rich set of array-like structures to capture
 everything we need for Grid.
 
 
-\section{Grids and arrays}
-\label{sec:org26c669c}
+\section{Grids, vectors, and arrays}
 
-A \emph{grid} is a totally ordered, finite set. If \(\GG\) is a grid, we denote the
-ordering on \(\GG\) by \(<\) where there is no confusion as to which grid the order
-refers. Two grids, \(\gr{G}\) and \(\gr{H}\), are \emph{isomorphic}, written \(\gr{G}\sim
-\gr{H}\), if there is an order-preserving bijection between them. It is clear that
-all grids are isomorphic to one of the bounded naturals, \((0, 1, \dotsc, N-1)\)
-for some \(N\). (Proof?)
+A \emph{grid} is a totally ordered, finite set. If \(\GG\) is a grid, we denote
+the ordering on \(\GG\) by \(<\) (at least when there is no confusion as to
+which grid the order refers). Two grids, \(\gr{G}\) and \(\gr{H}\), are
+\emph{isomorphic}, written \(\gr{G}\sim \gr{H}\), if there is an order-preserving
+bijection between them. It is clear that all grids are isomorphic to one of the
+bounded naturals, \((0, 1, \dotsc, N-1)\) for some \(N\). (Proof?)
 
-We write \(\void\) for the empty grid; \(\mathbf{1}\) for the grid \((0)\); and in
+We write \(\void\) for the empty grid, \(\mathbf{1}\) for the grid \((0)\), and in
 general \(\mathbf{n}\) for the grid \((0, 1, \dotsc, n-1)\). 
 
-Fix, once and for all, a set \(S\) of \emph{primitives}. An \emph{array of rank 0} is an
-element of \(S\). An \emph{array of rank \(n\)} is a map from a grid to an array of rank
-\(n-1\). (Thus an array of rank 1 is a map from a grid to \(S\).)
+Fix, once and for all, a set, \(S\), of \emph{primitives}. (We will later choose
+the primitives to be the atomic types of spreadsheets together with the
+first-order functions.) Let $\GG$ be a grid and $X$ be any set. A \emph{vector
+of $X$} is a map $\GG \to X$. An \emph{array of rank 1} is a vector of $S$. An
+\emph{array of rank $n$} is a vector of arrays of rank $n$. x
 
 Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids. The \emph{direct sum},
 \(\bigoplus_i \GG_i\), is a grid such that
@@ -101,28 +99,10 @@ in \(\GG_i\) or (ii) \(g\in\GG_i\) and \(h\in\GG_j\) and \(i < j\).
 That is, the direct sum is what you get if you `line up the component grids in
 order.' We write the direct sum of two grids \(\gr{G}\) and \(\gr{H}\) as \(\gr{G}\oplus
 \gr{H}\). For any grid, \(\GG\oplus\void \sim \GG\). Furthermore,
-\(\bigoplus_{i=1}^n \mathbf{1} \sim \mathbf{n}\). 
+\(\bigoplus_{i=1}^n \mathbf{1} = \mathbf{n}\). 
 
-For any \(X\), a map \(\bigoplus \GG_i\to X\) is an \(N\)-tuple of maps \((f_1, f_2,
+For any \(X\), a map \(\bigoplus \GG_i\to X\) is equivalent to an \(N\)-tuple of maps \((f_1, f_2,
 \dots, f_N)\), where \(f_i : \GG_i\to X\).
-
-Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids as before. The \emph{direct
-product}, \(\bigotimes_i \GG_i\), is a grid such that
-\begin{enumerate}
-\item The set \(\bigotimes_i \GG_i\) is the Cartesian product of the \(\GG_i\); \emph{i.e.},
-the set of tuples \((g_1, g_2, \dotsc, g_N)\) where \(g_i\in\GG_i\);
-\item \((g_1, g_2, \dotsc, g_N) < (h_1, h_2, \dotsc, h_N)\) iff there is some
-\(k\in\{1, \dotsc, N\}\) such that (i) \(g_i = h_i\) for all \(i<k\); and (ii) \(g_k<h_k\).
-\end{enumerate}
-That is, the direct product is the Cartesian product with `dictionary order' on
-the elements. We write the direct product of two grids, \(\gr{G}\) and \(\gr{H}\) as
-\(\gr{G}\otimes\gr{H}\). The empty product is \(\unit\); \(\GG\otimes\unit\sim \GG\);
-and \(\GG\otimes\void \sim \void\).
-
-For any \(X\), a map \(\bigotimes_i\GG_i \to X\) is a map \(\GG_1\to (\GG_2\to
-(\dotsm (\GG_N \to X))\dotsm )\).
-
-A grid in Cell is either \(\void\), \(\unit\), or a direct sum or a direct product. 
 
 The kinds of arrays found in Remora are a subclass of what we are calling arrays
 here. A rank 1 Remora array is specifically a map \(\mathbf{n}\to S\) for some
@@ -141,25 +121,53 @@ reasonably write an example of this type as \texttt{[[10 20 30] [40 50]]}. But t
 not a Remora array: a Remora array can't contain arrays of different length.
 
 It is true that \(\mathbf{3}\oplus\mathbf{2}\) is isomorphic to \(\mathbf{5}\).
-Remora has an \emph{append} function, so that, for example \texttt{(append [10 20 30] [40
-50])} is valid Remora and evaluates to \texttt{[10 20 30 40 50]}. But isomorphism (in
-the sense we defined it above) is not identity.
+Remora has an \emph{append} function, so that, for example \texttt{(append [10
+20 30] [40 50])} is valid Remora and evaluates to \texttt{[10 20 30 40 50]}. But isomorphism (in the sense we defined it above) is not identity.
 
-This is why it 
+This is why the direct sum is defined for $n$ factors for any $n$, not simply as
+a binary operator for two factors. In our model there is a difference between,
+say, $\mathbf{3} = \mathbf{1}\oplus\mathbf{1}\oplus\mathbf{1}$ and
+$\mathbf{1}\oplus(\mathbf{1}\oplus\mathbf{1})$.
 
-a x (b + c)
-well, a x (b + c) -> A
-is a -> (b+c) -> A
-is a -> (b->A, c->A)
-is (a->b->A, a->c->A)
-is (a x b -> A, a x c -> A)
-is (a x b + a x c) -> A
-(a + b) x c
-well, (a + b) x c -> A
-is (a+b) -> c -> A
-is (a -> c -> A, b -> c -> A)
-is (a x c -> A, b x c -> A)
-is (a x c + b x c) -> A
+Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids as before. The
+\emph{direct product}, \(\bigotimes_i \GG_i\), is a grid such that
+\begin{enumerate}
+\item The set \(\bigotimes_i \GG_i\) is the Cartesian product of the \(\GG_i\);
+  \emph{i.e.}, the set of tuples \((g_1, g_2, \dotsc, g_N)\) where
+  \(g_i\in\GG_i\);
+\item \((g_1, g_2, \dotsc, g_N) < (h_1, h_2, \dotsc, h_N)\) iff there is some
+  \(k\in\{1, \dotsc, N\}\) such that (i) \(g_i = h_i\) for all \(i<k\); and (ii)
+  \(g_k<h_k\).
+\end{enumerate}
+That is, the direct product is the Cartesian product with `dictionary order' on
+the elements. We write the direct product of two grids, \(\gr{G}\) and
+\(\gr{H}\), as \(\gr{G}\otimes\gr{H}\). The empty product is \(\unit\): \(\GG\otimes\unit\sim
+\GG\); and \(\GG\otimes\void \sim \void\).
+
+For any \(X\), a map \(\bigotimes_i\GG_i \to X\) is equivalent to a map \(\GG_1 \to
+(\GG_2 \to (\dotsm (\GG_N \to X))\dotsm )\).
+
+
+
+
+
+
+A grid in Cell is either \(\void\), \(\unit\), or a direct sum or a direct product. 
+
+
+%% a x (b + c)
+%% well, a x (b + c) -> A
+%% is a -> (b+c) -> A
+%% is a -> (b->A, c->A)
+%% is (a->b->A, a->c->A)
+%% is (a x b -> A, a x c -> A)
+%% is (a x b + a x c) -> A
+%% (a + b) x c
+%% well, (a + b) x c -> A
+%% is (a+b) -> c -> A
+%% is (a -> c -> A, b -> c -> A)
+%% is (a x c -> A, b x c -> A)
+%% is (a x c + b x c) -> A
 
 
 
