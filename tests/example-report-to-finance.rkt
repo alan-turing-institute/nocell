@@ -14,6 +14,7 @@
                     [date? gregor:date?])
          whatnow/forecast
          whatnow/schedule
+         racket/hash
          "../grid/grid.rkt"
          "../ods/ods.rkt")
 
@@ -140,7 +141,7 @@
 ;; A list of the months comprising the given financial year
 ;;
 ;; fy-months : exact-integer? -> (listof gregor:date?)
-(define (fy-months y) (map (curry +months (gregor:date 2020 03)) (range 12)))
+(define (fy-months y) (map (curry +months (gregor:date 2020 04)) (range 12)))
 
 
 ;; ----------------------------------------
@@ -254,7 +255,7 @@
                                                      "REG Service Areas"
                                                      "Trac days"
                                                      "Turing Programme Support"
-                                                     "Turing Service Areas"
+                                                     ;; "Turing Service Areas"
                                                      "UNAVAILABLE"))
                      (andmap zero? (hash-values (allocation-month-fraction a)))))
 
@@ -273,17 +274,44 @@
    (grid-program->sxml (allocations->grid allocations dates)
                        #:blank-rows-before '(1)
                        #:blank-cols-before '(1))
-   #:type 'fods))
+   #:type 'ods))
 
 
 ;; ----------------------------------------
 ;; Examples
 
-(bytes->file (make-report-ods example-allocations (fy-months 2020))
-             "example-report-to-finance.fods")
+;; (bytes->file (make-report-ods example-allocations (fy-months 2020))
+;;              "example-report-to-finance.fods")
 
-;; (let ([months (fy-months 2020)]
+;; (let ([months (map (curry +months (gregor:date 2020 04)) (range 12))]
 ;;       [forecast-schedule (get-the-schedule)])
 ;;   (bytes->file
 ;;    (make-report-ods (schedule->allocations forecast-schedule months) months)
-;;    "example-report-to-finance.fods"))
+;;    "example-report-to-finance.ods"))
+
+(let* ([months (map (curry +months (gregor:date 2020 04)) (range 12))]
+
+       [allocations
+        (for/fold ([allocations null])
+                  ([month (in-list months)])
+          (let* ([month-end (-days (+months month 1) 1)]
+                 [forecast-schedule (get-the-schedule month month-end)])
+            (append allocations
+                    (schedule->allocations forecast-schedule (list month)))))]
+
+       [allocations-grouped
+        (group-by (λ (a) (list (allocation-client a)
+                               (allocation-person a)
+                               (allocation-project a)))
+                  allocations)]
+
+       [allocations-combined
+        (map (λ (as)
+               (struct-copy allocation
+                            (car as)
+                            [month-fraction
+                             (apply hash-union (map allocation-month-fraction as))]))
+             allocations-grouped)])
+
+  (bytes->file (make-report-ods allocations-combined months)
+               "example-report-to-finance.ods"))
