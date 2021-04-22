@@ -83,10 +83,10 @@ bounded naturals, \((0, 1, \dotsc, N-1)\) for some \(N\). (Proof?)
 We write \(\void\) for the empty grid, \(\mathbf{1}\) for the grid \((0)\), and in
 general \(\mathbf{n}\) for the grid \((0, 1, \dotsc, n-1)\). 
 
-Fix, once and for all, a set, \(S\), of \emph{primitives}. (We will later choose
+Fix, once and for all, a set, \(P\), of \emph{primitives}. (We will later choose
 the primitives to be the atomic types of spreadsheets together with the
 first-order functions.) Let $\GG$ be a grid and $X$ be any set. A \emph{vector
-of $X$} is a map $\GG \to X$. An \emph{array of rank 1} is a vector of $S$. An
+of $X$} is a map $\GG \to X$. An \emph{array of rank 1} is a vector of $P$. An
 \emph{array of rank $n$} is a vector of arrays of rank $n$. x
 
 Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids. The \emph{direct sum},
@@ -105,18 +105,18 @@ For any \(X\), a map \(\bigoplus \GG_i\to X\) is equivalent to an \(N\)-tuple of
 \dots, f_N)\), where \(f_i : \GG_i\to X\).
 
 The kinds of arrays found in Remora are a subclass of what we are calling arrays
-here. A rank 1 Remora array is specifically a map \(\mathbf{n}\to S\) for some
+here. A rank 1 Remora array is specifically a map \(\mathbf{n}\to P\) for some
 grid \(\mathbf{n}\). Rank 2 Remora arrays are maps from \(\mathbf{m}\) to a rank 1
 Remora array; and so on. Thus the type of a Remora array is always specified
 completely by the list of integers \(m, n, \dotsc\).
 
 Remora arrays are clearly arrays but the converse is not necessarily
-true. Consider the map \(\mathbf{3}\to S\) whose values on the elements of
+true. Consider the map \(\mathbf{3}\to P\) whose values on the elements of
 \(\mathbf{3}\) are 10, 20, and 30, in that order. This is a rank 1 Remora array,
 written \texttt{[10 20 30]}. Likewise, consider the array \texttt{[40 50]}, which is a map
-\(\mathbf{2}\to S\). What can we say about some map \(\mathbf{3}\oplus\mathbf{2}\to
-S\)? By our definitions, that is an array; it is equivalent to a pair of maps,
-one of type \(\mathbf{3}\to S\) and one of type \(\mathbf{2}\to S\). We might
+\(\mathbf{2}\to P\). What can we say about some map \(\mathbf{3}\oplus\mathbf{2}\to
+P\)? By our definitions, that is an array; it is equivalent to a pair of maps,
+one of type \(\mathbf{3}\to P\) and one of type \(\mathbf{2}\to P\). We might
 reasonably write an example of this type as \texttt{[[10 20 30] [40 50]]}. But this is
 not a Remora array: a Remora array can't contain arrays of different length.
 
@@ -145,14 +145,13 @@ the elements. We write the direct product of two grids, \(\gr{G}\) and
 \GG\); and \(\GG\otimes\void \sim \void\).
 
 For any \(X\), a map \(\bigotimes_i\GG_i \to X\) is equivalent to a map \(\GG_1 \to
-(\GG_2 \to (\dotsm (\GG_N \to X))\dotsm )\).
+(\GG_2 \to (\dotsm (\GG_N \to X))\dotsm )\). In Cell, no distinction is made between
+equivalent arrays. The right-associative array map is taken to be
+canonical. (Note: this equivalence seems to underlie the rank polymorphism
+inherent in array languages, but I am not quite sure how to say this clearly.)
 
-
-
-
-
-
-A grid in Cell is either \(\void\), \(\unit\), or a direct sum or a direct product. 
+A grid in Cell is either \(\void\), \(\unit\), $\mathbf{n}\sim \bigoplus_n \unit$,
+or a direct sum or a direct product.
 
 
 %% a x (b + c)
@@ -168,6 +167,36 @@ A grid in Cell is either \(\void\), \(\unit\), or a direct sum or a direct produ
 %% is (a -> c -> A, b -> c -> A)
 %% is (a x c -> A, b x c -> A)
 %% is (a x c + b x c) -> A
+
+\section{Hierarchical arrays and array expressions}
+
+The kinds of arrays that are passed to Grid are arrays involving functions. We
+assume that the set of primitives, $P$, is the disjoint union, $F \sqcup V$, of a set
+of \emph{primitive functions}, $F$, and a set of \emph{primitive values},
+$V$.
+
+Recall that an array is a map from a grid to the primitives (or a chain of
+such maps ending in the primitives). A \emph{value array} is an array whose
+codomain is~$V$. In other words, a value array is `an array, all of whose
+elements are values.'
+
+Each primitive function has an associated \emph{type}, which is a pair of grids,
+$\gr{S}, \gr{T}$. A primitive function, $f_0: \gr{S} \to \gr{T}$ maps arrays
+equivalent to $\gr{S}\to P$ to arrays equivalent to $\gr{T} \to P$. (By
+convention, primitive functions have a subscript~0.) For example, the type of
+primtive binary addition is
+\begin{equation*}
++_0: \mathbf{2}\to\mathbf{1}.
+\end{equation*}
+Note that the `real' type of $+_0$ is $(\mathbf{2}\to P)\to (\mathbf{1}\to P)$.
+
+
+
+%% An \emph{application array} is an array $\mathgr{A}\to\dotsm\to P$ such that
+%% \begin{enumerate}
+%% \item $\mathgr{A} = \unit \oplus \mathbf{n}$ for some~$\mathbf{n}$; and
+%% \item 
+%% \end{enumerate}
 
 
 
