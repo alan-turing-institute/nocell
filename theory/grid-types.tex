@@ -168,27 +168,47 @@ or a direct sum or a direct product.
 %% is (a x c -> A, b x c -> A)
 %% is (a x c + b x c) -> A
 
-\section{Hierarchical arrays and array expressions}
+\section{Array expressions}
 
 The kinds of arrays that are passed to Grid are arrays involving functions. We
-assume that the set of primitives, $P$, is the disjoint union, $F \sqcup V$, of a set
-of \emph{primitive functions}, $F$, and a set of \emph{primitive values},
-$V$.
+assume that the set of primitives, $P$, is the disjoint union, $F \sqcup V$, of a
+set, $F$, of \emph{primitive functions} and a set, $V$, of \emph{values}.
 
-Recall that an array is a map from a grid to the primitives (or a chain of
-such maps ending in the primitives). A \emph{value array} is an array whose
-codomain is~$V$. In other words, a value array is `an array, all of whose
-elements are values.'
+Recall that an array is a map from a grid to the primitives, or a chain of such
+maps ending in the primitives. A \emph{value array} is an array whose codomain
+is~$V$. In other words, a value array is `an array, all of whose elements are
+values.' Likewise, a \emph{function array} is an array whose codomain is~$F$.
 
-Each primitive function has an associated \emph{type}, which is a pair of grids,
-$\gr{S}, \gr{T}$. A primitive function, $f_0: \gr{S} \to \gr{T}$ maps arrays
-equivalent to $\gr{S}\to P$ to arrays equivalent to $\gr{T} \to P$. (By
-convention, primitive functions have a subscript~0.) For example, the type of
-primtive binary addition is
+For each primitive function there is given a \emph{signature}, which is a
+grid. A primitive function $f_0$ having signature $\gr{S}$ is a first-order
+function from arrays to values, $f_0: (\gr{S} \to V) \to V$. It maps arrays
+equivalent to $\gr{S}\to V$ to values. (By convention, primitive functions have a
+subscript~0.) For example, the signature of primitive binary addition is
+$\mathbf{2}$:
 \begin{equation*}
-+_0: \mathbf{2}\to\mathbf{1}.
++_0: (\mathbf{2} \to V) \to V.
 \end{equation*}
-Note that the `real' type of $+_0$ is $(\mathbf{2}\to P)\to (\mathbf{1}\to P)$.
+Note that $V$ is a rank zero array, which is the same as a map from the empty
+product to $V$. But the empty product is $\mathbf{1}$, so $V$ is equivalent to
+$\mathbf{1}\to V$. Hence we might equivalently write:
+\begin{equation*}
++_0: (\mathbf{2} \to V) \to (\mathbf{1} \to V).
+\end{equation*}
+
+Fix, once and for all, a grid, $\gr{a} \sim \mathbf{1}$. An \emph{application
+array} is an array $A$ of type $A: \gr{a}\oplus\gr{G} \to \alpha$ for some grid
+$\gr{G}$ and array $\alpha$. 
+
+Some application arrays are `well-formed' in the sense that they can be
+evaluated. Roughly, the $\gr{a}$-part of the array must be primitive
+functions all having the same signature; and the $\gr{G}$ part must have the
+same type as that signature.
+
+An \emph{expression array} is either a value array or a well-formed application
+array.
+
+
+
 
 
 
