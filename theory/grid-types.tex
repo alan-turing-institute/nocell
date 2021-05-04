@@ -78,16 +78,17 @@ the ordering on \(\GG\) by \(<\) (at least when there is no confusion as to
 which grid the order refers). Two grids, \(\gr{G}\) and \(\gr{H}\), are
 \emph{isomorphic}, written \(\gr{G}\sim \gr{H}\), if there is an order-preserving
 bijection between them. It is clear that all grids are isomorphic to one of the
-bounded naturals, \((0, 1, \dotsc, N-1)\) for some \(N\). (Proof?)
+bounded naturals, \((0, 1, \dotsc, N-1)\) for some \(N\). (Proof?) However, in
+Cell we distinguish grids that are isomorphic but not identical.
 
-We write \(\void\) for the empty grid, \(\mathbf{1}\) for the grid \((0)\), and in
-general \(\mathbf{n}\) for the grid \((0, 1, \dotsc, n-1)\). 
+We write \(\void\) for the empty grid (which is unique) and $\unit$ for a
+distinguished grid with a single element. 
 
 Fix, once and for all, a set, \(P\), of \emph{primitives}. (We will later choose
 the primitives to be the atomic types of spreadsheets together with the
 first-order functions.) Let $\GG$ be a grid and $X$ be any set. A \emph{vector
 of $X$} is a map $\GG \to X$. An \emph{array of rank 1} is a vector of $P$. An
-\emph{array of rank $n$} is a vector of arrays of rank $n$. x
+\emph{array of rank $n$} is a vector of arrays of rank $n$. 
 
 Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids. The \emph{direct sum},
 \(\bigoplus_i \GG_i\), is a grid such that
@@ -97,12 +98,17 @@ Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids. The \emph{direct sum},
 in \(\GG_i\) or (ii) \(g\in\GG_i\) and \(h\in\GG_j\) and \(i < j\).
 \end{enumerate}
 That is, the direct sum is what you get if you `line up the component grids in
-order.' We write the direct sum of two grids \(\gr{G}\) and \(\gr{H}\) as \(\gr{G}\oplus
-\gr{H}\). For any grid, \(\GG\oplus\void \sim \GG\). Furthermore,
-\(\bigoplus_{i=1}^n \mathbf{1} = \mathbf{n}\). 
+order.' We write the direct sum of two grids \(\gr{G}\) and \(\gr{H}\) as
+\(\gr{G}\oplus \gr{H}\). The direct sum of no grids is $\void$ and, for any grid
+$\GG$, \(\GG\oplus\void = \GG\).
 
-For any \(X\), a map \(\bigoplus \GG_i\to X\) is equivalent to an \(N\)-tuple of maps \((f_1, f_2,
-\dots, f_N)\), where \(f_i : \GG_i\to X\).
+The `standard grid of length $n$', denoted $\mathbf{n}$, is
+\begin{equation*}
+\mathbf{n} \equiv \bigoplus_{i=0}^{n-1} \unit.
+\end{equation*}
+
+For any \(X\), a map \(\bigoplus \GG_i\to X\) is equivalent to an \(N\)-tuple of
+maps \((f_1, f_2, \dots, f_N)\), where \(f_i : \GG_i\to X\).
 
 The kinds of arrays found in Remora are a subclass of what we are calling arrays
 here. A rank 1 Remora array is specifically a map \(\mathbf{n}\to P\) for some
@@ -121,8 +127,9 @@ reasonably write an example of this type as \texttt{[[10 20 30] [40 50]]}. But t
 not a Remora array: a Remora array can't contain arrays of different length.
 
 It is true that \(\mathbf{3}\oplus\mathbf{2}\) is isomorphic to \(\mathbf{5}\).
-Remora has an \emph{append} function, so that, for example \texttt{(append [10
-20 30] [40 50])} is valid Remora and evaluates to \texttt{[10 20 30 40 50]}. But isomorphism (in the sense we defined it above) is not identity.
+Remora has an \emph{append} function, so that, for example \texttt{(append [10 20 30] [40 50])}
+is valid Remora and evaluates to \texttt{[10 20 30 40 50]}.
+But isomorphism (in the sense we defined it above) is not identity.
 
 This is why the direct sum is defined for $n$ factors for any $n$, not simply as
 a binary operator for two factors. In our model there is a difference between,
@@ -141,10 +148,12 @@ Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids as before. The
 \end{enumerate}
 That is, the direct product is the Cartesian product with `dictionary order' on
 the elements. We write the direct product of two grids, \(\gr{G}\) and
-\(\gr{H}\), as \(\gr{G}\otimes\gr{H}\). The empty product is \(\unit\): \(\GG\otimes\unit\sim
-\GG\); and \(\GG\otimes\void \sim \void\).
+\(\gr{H}\), as \(\gr{G}\otimes\gr{H}\). The empty product is \(\unit\) (or, rather, I
+think that we choose the distinguished unit grid to be the empty product).
+Furthermore \(\GG\otimes\unit = \GG\) (although I'm a little confused about whether
+that's an `$=$' or a `$+$') and \(\GG\otimes\void = \void\).
 
-For any \(X\), a map \(\bigotimes_i\GG_i \to X\) is equivalent to a map \(\GG_1 \to
+For any \(X\), a map \(\big otimes_i\GG_i \to X\) is equivalent to a map \(\GG_1 \to
 (\GG_2 \to (\dotsm (\GG_N \to X))\dotsm )\). In Cell, no distinction is made between
 equivalent arrays. The right-associative array map is taken to be
 canonical. (Note: this equivalence seems to underlie the rank polymorphism
@@ -171,7 +180,7 @@ or a direct sum or a direct product.
 \section{Array expressions}
 
 The kinds of arrays that are passed to Grid are arrays involving functions. We
-assume that the set of primitives, $P$, is the disjoint union, $F \sqcup V$, of a
+assume that the set of primitives, $P$, is the disjoint union, $F \uplus V$, of a
 set, $F$, of \emph{primitive functions} and a set, $V$, of \emph{values}.
 
 Recall that an array is a map from a grid to the primitives, or a chain of such
@@ -207,8 +216,13 @@ same type as that signature.
 An \emph{expression array} is either a value array or a well-formed application
 array.
 
+Notes:
 
+Unit grid is not the same as the standard grid of length 1.
+Units (``dot'') get absorbed in products
+Now have to figure out array extension in grid
 
+                                                                                                   
 
 
 
