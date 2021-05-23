@@ -1,0 +1,36 @@
+graph "three-to-P" 
+{
+  graph [margin=0.1];
+  node [shape=none];
+
+  three [label = "⊕"];
+  three -- "10";
+  three -- "20";
+  three -- "30";
+}
+
+graph "one-plus-two" 
+{
+  graph [margin=0.1];
+  node [shape=none];
+
+  a [label = "⊕"];
+  a1 [label = "10"];
+  a2 [label = "⊕"];
+  
+  a -- a1;
+  a -- a2;
+  a2 -- "20";
+  a2 -- "30";
+
+}
+
+graph "one" 
+{
+  graph [margin=0.1];
+  node [shape=none];
+
+  a [label = "⊕"];
+
+  a -- "10";
+}
