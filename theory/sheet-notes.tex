@@ -53,6 +53,10 @@ A \emph{grid}, \(\gr{G}\), is a totally ordered, finite set. An \emph{array} is 
 
 A direct sum of grids, \(\bigoplus_i \GG_i\), is a an array of the length of all \(\GG\) combined but the output array knows how it got there. Conceptually, every grid is a direct sum of the unit grid $\unit$. For example, an array of type $\three \to P$ is a direct sum of three $\unit \to P$. Out of convenience we write an array of type $\unit\to P$ as a `bare value,' such as \verb|42|.
 
+The direct product of grids is the Cartesian product with `dictionary order' on
+the elements. We write the direct product of two grids, \(\gr{G}\) and
+\(\gr{H}\), as \(\gr{G}\otimes\gr{H}\). The array \verb|[[10 20] [30 40] [50 60]]| is of type $\three \to (\two \to P)$, which is equivalent to $\three \bigotimes \two$. 
+
 \section{Spreadsheet notation}
 
 We keep in mind the difference between dimensions that have order, such as spatial layout and colour, and dimensions that are categorical, such as textual emphasis. We also note that as much as possible our formatting conventions should be generalisable to any output. Therefore, some dimensions that are not generalised to any output, for example colour, should be optional enhancements rather than a core way to communicate information.
@@ -80,7 +84,7 @@ Rule \ref{eq:rule1} states that all unit grids corresponds to a single spreadshe
 
 Next we need a rule to represent hierarchy, or nested sums. For now let's attempt to represent direct sums in one dimension, which would leave a 2D layout for product types. It seems natural to use borders to delineate summands. E.g. \verb|{10 [20 30]}| $\Rightarrow 10 \;|\; 20 \;30\; |$. However, we need a formatting convention that has order so that we can simultaneous represent groupings and tree depth. For example, the array \verb|{10 {20 [30 40]}}| has type $\one \bigoplus (\one \bigoplus \two)$, and it is ambiguous if \verb|{10 {20 [30 40]}}| $\Rightarrow 10 \;|\; 20 \;|\; 30\; 40\; |$. One could double-up the final border to denote the double-nesting (e.g. $10 \;|\; 20 \;|\; 30\; 40\;||$, but this may get unwieldy, there is a limit to how many lines you can use as borders in most outputs, and if the length of the nested array in long it will be difficult to match up the end borders  with the beginning borders. 
 
-In Excel an ordered dimension that has the advantage of being orthogonal to the other dimensions is colour. So, if we take tree-depth, $td$, of an expression and lay it out as follows
+In Excel an ordered dimension that has the advantage of being orthogonal to the other dimensions is cell background colour. So, if we take tree-depth, $td$, of an expression and lay it out as follows
 
 \begin{equation} 
  td \Rightarrow \overleftarrow{\kappa}, \uparrow \label{eq:rule2}
@@ -94,7 +98,6 @@ This frees us up to also use borders to delineate grids.
  \mathbf{n} \sim \bigoplus_n \unit \Rightarrow \mid \mathbf{S}_{[n,1]} \mid  \label{eq:rule3}
 \end{equation}
 
-
 Combining Rules \ref{eq:rule1}, \ref{eq:rule2}, and \ref{eq:rule3} would produce the excel formatting shown in Fig \ref{fig:format1} (given an arbitrary colour palette). 
 
 \begin{figure}[h] 
@@ -106,6 +109,30 @@ Combining Rules \ref{eq:rule1}, \ref{eq:rule2}, and \ref{eq:rule3} would produce
 \end{figure}
 
 Note that backends  that do not have cell background colours will need to have different implementations for $\overleftarrow{\kappa}$. An example could be appending a dot for any $td > 1$, for example \verb|{10 {20 [30 40]}}| could be represented $30^{..}\; 40^{..}\;|\;20^{.}\;|\;10\;|$ without the appearance getting too ugly, I think.
+
+\section{Direct products and spreadsheets}
+
+Direct products of two grids lend themselves to being represented in two dimensions, since they can be naturally thought of as a rectangular grid. Remember that the direct product is referring to the \textit{grid} type, not the values. All the following examples are of grid type $\two \to P$: \verb|[10 20]|,  \verb|[30 40]|,  \verb|[50 60]|. The expression  \verb|[[10 20] [30 40] [50 60]]| is of type $\three \bigotimes \two \to P$ even though the inner values are different, you could replace the inner grids of type $\two \to P$ with any $P$. The key thing is that the inner grids are of the same type. They can be convoluted sum types, or a product type containing sum types (and so on and so forth...). 
+
+\subsection{Products of sums}
+
+For a direct product of sums, all the previous formatting rules can still apply if the product gets laid out horizontally, with sum types unfolding downwards. If $\gr{H}_n$ is a grid of sum type with length $n$, and $\gr{G}_m$ is a grid of the form $\bigoplus_m \unit$, then we employ the following rule:
+
+\begin{equation} 
+ \gr{G}_m \bigotimes \gr{H}_n \Rightarrow \mathbf{S}_{[n,m]} \label{eq:rule4}
+\end{equation}
+
+Examples of this rule, added to the previous rules, are given in Fig \ref{fig:format2}. 
+
+\begin{figure}[h] 
+\centering
+  \includegraphics[scale=.7]{screenshots/prod1.png}
+    \includegraphics[scale=.7]{screenshots/prod2.png}
+  \caption{Left: \texttt{[\{10 [20 30]\} \{1 [2 3]\} \{100 [200 300]\}]}. Right:  \texttt{[\{10 \{20 [30 40]\}\} \{1 \{2 [3 4]\}\} \{100 \{200 [300 400]\}\}]}.}
+  \label{fig:format2}
+\end{figure}
+
+\subsection{Products of Products}
 
 
 
