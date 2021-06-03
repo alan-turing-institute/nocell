@@ -4,14 +4,13 @@
 (require pict/tree-layout
          pict
          racket/format
-         racket/class)
+         racket/class
+         racket/function)
 
 
 #|
 
 Saves an expression tree from a (quote s-expression?)
-
-Only supports three sibling nodes.
 
 |#
 
@@ -35,23 +34,20 @@ Only supports three sibling nodes.
                        (text (~a sexp)))))
 
 
-(define (make-tree sexp)
-  (naive-layered (traverse-tree sexp)))
-
+;;traverse-tree: datum? -> tree-layout? 
 (define (traverse-tree sexp)
   (cond
     [(null? sexp) #f]
     [(integer? sexp) (make-node sexp)]
     
-    [(= (length sexp) 2)
-     (tree-layout #:pict plus
-                  (traverse-tree (car sexp))
-                  (traverse-tree (cadr sexp)))]
-    [(= (length sexp) 3)
-     (tree-layout #:pict plus
-                  (traverse-tree (car sexp))
-                  (traverse-tree (cadr sexp))
-                  (traverse-tree (caddr sexp)))]))
+    [(pair? sexp)
+     (apply (curry tree-layout #:pict plus)
+            (map traverse-tree sexp))]))
+
+(define (make-tree sexp)
+  (naive-layered (traverse-tree sexp)))
+
+
 
 (define (save-pict the-pict name kind)
   (define bm (pict->bitmap the-pict))
