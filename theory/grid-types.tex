@@ -139,9 +139,10 @@ true. Consider the map \(\mathbf{3}\to P\) whose values on the elements of
 \verb|[10 20 30]|. Likewise, consider the array \verb|[40 50]|, which is a map
 \(\mathbf{2}\to P\). What can we say about some map \(\mathbf{3}\oplus\mathbf{2}\to P\)?
 By our definition, that is an array; it is equivalent to a pair of maps, one of
-type \(\mathbf{3}\to P\) and one of type \(\mathbf{2}\to P\). We might reasonably
-write an example of this type as \texttt{[[10 20 30] [40 50]]}. But this is not
-a Remora array: a Remora array can't contain arrays of different length.
+type \(\mathbf{3}\to P\) and one of type \(\mathbf{2}\to P\). We might write an
+example of this type as \texttt{[[10 20 30] [40 50]]}.\footnote{We don't write
+it like this, but we might.} But this is not a Remora array: a Remora array
+can't contain arrays of different length.
 
 It is true that \(\mathbf{3}\oplus\mathbf{2}\) is isomorphic to \(\mathbf{5}\).
 Remora has an \emph{append} function, so that, for example \texttt{(append [10
@@ -149,9 +150,75 @@ Remora has an \emph{append} function, so that, for example \texttt{(append [10
 But isomorphism (in the sense we defined it above) is not identity.
 
 This is why the direct sum is defined for $n$ factors for each $n$. In our model
-there is a difference between, say, $\mathbf{3} =
-\mathbf{1}\oplus\mathbf{1}\oplus\mathbf{1}$ and $\mathbf{1}\oplus(\mathbf{1}\oplus\mathbf{1})$.
+there is a difference between, say, $\mathbf{3} = \bigoplus_3 \unit$ and $\unit
+\oplus (\unit \oplus \unit)$.
 
+
+
+\subsection{Direct products of grids}
+
+In Remora, arrays have a rank. A rank 1 array is a vector of values; a rank 2
+array is a vector of rank 1 arrays of the same length; and so on.  For example
+\verb|[[1 2] [10 20] [100 20]]| is a rank 2 array. It is a vector (of length
+three) of rank 1 arrays (of length 2). In our language, it is a map from $\three$
+to arrays of type $\two \to P$. So the overall type of this array is $\three \to
+(\two \to P)$.
+
+We often imagine that this array is actually based on a `rectangular' grid, of
+size $3 \times 2 = 6$. Let $\gr{G}$ and $\gr{H}$ be grids. The \emph{direct product},
+$\gr{G}\otimes\gr{H}$, is a grid such that
+\begin{enumerate}
+\item The set $\gr{G}\otimes\gr{H}$ is the Cartesian product $\gr{G} \times \gr{H}$;
+ \emph{i.e.}, the set of pairs $(g, h)$ where $g\in\gr{G}$ and $h\in\gr{H}$;
+\item $(g, h) < (g', h')$ iff either $g < g'$ or $g = g'$ and $h < h'$. 
+\end{enumerate}
+
+%% OLD: When we did tuple products
+%%
+%% Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids as before. The
+%% \emph{direct product}, \(\bigotimes_i \GG_i\), is a grid such that
+%% \begin{enumerate}
+%% \item The set \(\bigotimes_i \GG_i\) is the Cartesian product of the \(\GG_i\);
+%%   \emph{i.e.}, the set of tuples \((g_1, g_2, \dotsc, g_N)\) where
+%%   \(g_i\in\GG_i\);
+%% \item \((g_1, g_2, \dotsc, g_N) < (h_1, h_2, \dotsc, h_N)\) iff there is some
+%%   \(k\in\{1, \dotsc, N\}\) such that (i) \(g_i = h_i\) for all \(i<k\); and (ii)
+%%   \(g_k<h_k\).
+%% \end{enumerate}
+
+That is, the direct product is the Cartesian product with `dictionary order' on
+the elements. The empty product is $\unit$.\footnote{Or, rather, I think that we
+choose the distinguished unit grid $\unit$ to be the empty product.}
+Furthermore, $\GG\otimes\void = \void$ (although I'm a little confused about whether
+that's an `$=$' or a `$\sim$').
+
+For any \(X\), a map $\gr{G}\otimes\gr{H} \to X\) is equivalent to a map $\gr{G} \to
+(\gr{H} \to X)$. Thus, in the example, an array of type $\three \to (\two \to P)$ can
+also be termed an array of type $\three \otimes \two \to P$.  
+
+In Cell, no distinction is made between equivalent \emph{arrays} of this kind
+and the right-associative map is taken to be canonical. (Note: this equivalence
+seems to underlie the rank polymorphism inherent in array languages, but I am
+not quite sure how to say this clearly.) Because of the canonical asociativity,
+only the binary product is defined: there aren't $n$-ary products as there were
+in the direct sum case.
+
+A grid in Cell is either \(\void\), \(\unit\), $\mathbf{n}\sim \bigoplus_n \unit$,
+or a direct sum or a direct product.
+
+%% a x (b + c)
+%% well, a x (b + c) -> A
+%% is a -> (b+c) -> A
+%% is a -> (b->A, c->A)
+%% is (a->b->A, a->c->A)
+%% is (a x b -> A, a x c -> A)
+%% is (a x b + a x c) -> A
+%% (a + b) x c
+%% well, (a + b) x c -> A
+%% is (a+b) -> c -> A
+%% is (a -> c -> A, b -> c -> A)
+%% is (a x c -> A, b x c -> A)
+%% is (a x c + b x c) -> A
 
 \subsection{Notation}
 
@@ -177,6 +244,13 @@ There is one wrinkle. We could also have written, say, \verb|[1 2 3]| as
 \verb|{1 2 3}|, but it is convenient to have the convention that an array of
 values whose grids is a direct sum of $\unit$ is written with square brackets. 
 
+In summary, given arrays $\alpha : \gr{A}\to P$, $\beta : \gr{B}\to P$, and $\gamma : \gr{C}\to P$
+the notation \texttt{\{$\alpha$ $\beta$ $\gamma$\}} means an array of type $\bigoplus
+\{\gr{A}, \gr{B}, \gr{C}\}$. In the particular case that $\gr{A} = \gr{B} =
+\gr{C}$ the notation \texttt{[$\alpha$ $\beta$ $\gamma$]} means an array of type $\three\to
+(\gr{A}\to P)$.
+
+
 
 \subsection{Further examples of direct sums}
 
@@ -184,97 +258,58 @@ In this section we describe examples of direct sums of grids and arrays built on
 them. We write an array of type $\unit\to P$ as a `bare value,' such as
 \verb|42|.
 
-An array of type $\three \to P$ is conceptually a tree.
-\begin{figure}[h]
+An array of type $\three \to P$ is conceptually a tree (see Figure~\ref{fig:gridthree}).
+\begin{figure}[ht]
   \includegraphics[scale=0.7]{diags/grids.gv.pdf}
-  \caption{The array \texttt{[10 20 30]}.}
+  \caption{The array \texttt{[10 20 30]}.}\label{fig:gridthree}
 \end{figure}
 Notice that the sum has three children because the direct sum in this case is a sum of
-three arguments. By contrast, the array \verb|{10 [20 30]}| is represented as:
-\begin{figure}[h]
+three arguments. By contrast, the array \verb|{10 [20 30]}| is represented as
+shown in Figure~\ref{fig:gridsum}.
+\begin{figure}[ht]
   \includegraphics[scale=0.7]{diags/grids.gv.2.pdf}
-  \caption{The array \texttt{\{10 [20 30]\}}.}
+  \caption{The array \texttt{\{10 [20 30]\}}.}\label{fig:gridsum}
 \end{figure}
 Finally, note that the array \verb|[10]| is represented as a node with a single
-child and not as a bare value (which would simply be \verb|10|).
-\begin{figure}[h]
+child, as in Figure~\ref{fig:gridsingleton}, and not as a bare value (which
+would simply be \verb|10|).
+\begin{figure}[ht]
   \includegraphics[scale=0.7]{diags/grids.gv.3.pdf}
-  \caption{The array \texttt{[10]}.}
+  \caption{The array \texttt{[10]}.}\label{fig:gridsingleton}
 \end{figure}
 
 
+\section{Expressions}
 
+The kinds of arrays that are passed to Grid are not simply arrays of values,
+just as an Excel spreadsheet is not simply a table of numbers. Instead, a
+spreadsheet is able to express certain simple computations. So we need some way
+to represent expressions as arrays.
 
+To begin with, we assume that the set of primitives, $P$, is the disjoint union,
+$F \uplus V$, of a set, $F$, of \emph{primitive functions} and a set, $V$, of
+\emph{values}. A \emph{value array} is an array whose codomain is~$V$. In other
+words, a value array is `an array, all of whose elements are values.' Likewise,
+a \emph{function array} is an array whose codomain is~$F$.
 
-\subsection{Direct products of grids}
-
-Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids as before. The
-\emph{direct product}, \(\bigotimes_i \GG_i\), is a grid such that
-\begin{enumerate}
-\item The set \(\bigotimes_i \GG_i\) is the Cartesian product of the \(\GG_i\);
-  \emph{i.e.}, the set of tuples \((g_1, g_2, \dotsc, g_N)\) where
-  \(g_i\in\GG_i\);
-\item \((g_1, g_2, \dotsc, g_N) < (h_1, h_2, \dotsc, h_N)\) iff there is some
-  \(k\in\{1, \dotsc, N\}\) such that (i) \(g_i = h_i\) for all \(i<k\); and (ii)
-  \(g_k<h_k\).
-\end{enumerate}
-That is, the direct product is the Cartesian product with `dictionary order' on
-the elements. We write the direct product of two grids, \(\gr{G}\) and
-\(\gr{H}\), as \(\gr{G}\otimes\gr{H}\). The empty product is \(\unit\) (or, rather, I
-think that we choose the distinguished unit grid to be the empty product).
-Furthermore \(\GG\otimes\unit = \GG\) (although I'm a little confused about whether
-that's an `$=$' or a `$+$') and \(\GG\otimes\void = \void\).
-
-For any \(X\), a map \(\bigotimes_i\GG_i \to X\) is equivalent to a map \(\GG_1 \to
-(\GG_2 \to (\dotsm (\GG_N \to X))\dotsm )\). In Cell, no distinction is made between
-equivalent arrays. The right-associative array map is taken to be
-canonical. (Note: this equivalence seems to underlie the rank polymorphism
-inherent in array languages, but I am not quite sure how to say this clearly.)
-
-A grid in Cell is either \(\void\), \(\unit\), $\mathbf{n}\sim \bigoplus_n \unit$,
-or a direct sum or a direct product.
-
-
-%% a x (b + c)
-%% well, a x (b + c) -> A
-%% is a -> (b+c) -> A
-%% is a -> (b->A, c->A)
-%% is (a->b->A, a->c->A)
-%% is (a x b -> A, a x c -> A)
-%% is (a x b + a x c) -> A
-%% (a + b) x c
-%% well, (a + b) x c -> A
-%% is (a+b) -> c -> A
-%% is (a -> c -> A, b -> c -> A)
-%% is (a x c -> A, b x c -> A)
-%% is (a x c + b x c) -> A
-
-\section{Array expressions}
-
-The kinds of arrays that are passed to Grid are arrays involving functions. We
-assume that the set of primitives, $P$, is the disjoint union, $F \uplus V$, of a
-set, $F$, of \emph{primitive functions} and a set, $V$, of \emph{values}.
-
-Recall that an array is a map from a grid to the primitives, or a chain of such
-maps ending in the primitives. A \emph{value array} is an array whose codomain
-is~$V$. In other words, a value array is `an array, all of whose elements are
-values.' Likewise, a \emph{function array} is an array whose codomain is~$F$.
-
-For each primitive function there is given a \emph{signature}, which is a
-grid. A primitive function $f_0$ having signature $\gr{S}$ is a first-order
-function from arrays to values, $f_0: (\gr{S} \to V) \to V$. It maps arrays
-equivalent to $\gr{S}\to V$ to values. (By convention, primitive functions have a
-subscript~0.) For example, the signature of primitive binary addition is
+Each primitive function comes with a grid, known as the \emph{signature} of the
+function. A primitive function, $f_0$, having signature $\gr{S}$, is a
+first-order function from arrays to values, $f_0: (\gr{S} \to V) \to V$. It maps
+arrays equivalent to $\gr{S}\to V$ to values. (By convention, primitive functions
+have a subscript~0.) For example, the signature of primitive binary addition is
 $\mathbf{2}$:
 \begin{equation*}
 +_0: (\mathbf{2} \to V) \to V.
 \end{equation*}
 Note that $V$ is a rank zero array, which is the same as a map from the empty
-product to $V$. But the empty product is $\mathbf{1}$, so $V$ is equivalent to
-$\mathbf{1}\to V$. Hence we might equivalently write:
+product to $V$. But the empty product is $\unit$, so $V$ is equivalent to
+$\unit\to V$. Hence we might equivalently write:
 \begin{equation*}
-+_0: (\mathbf{2} \to V) \to (\mathbf{1} \to V).
++_0: (\mathbf{2} \to V) \to (\unit \to V).
 \end{equation*}
+
+
+
 
 Fix, once and for all, a grid, $\gr{a} \sim \mathbf{1}$. An \emph{application
 array} is an array $A$ of type $\gr{a}\oplus\gr{G} \to \alpha$ for some grid
