@@ -292,12 +292,12 @@ $F \uplus V$, of a set, $F$, of \emph{primitive functions} and a set, $V$, of
 words, a value array is `an array, all of whose elements are values.' Likewise,
 a \emph{function array} is an array whose codomain is~$F$.
 
-Each primitive function comes with a grid, known as the \emph{signature} of the
-function. A primitive function, $f_0$, having signature $\gr{S}$, is a
-first-order function from arrays to values, $f_0: (\gr{S} \to V) \to V$. It maps
-arrays equivalent to $\gr{S}\to V$ to values. (By convention, primitive functions
-have a subscript~0.) For example, the signature of primitive binary addition is
-$\mathbf{2}$:
+With each primitive function there is associated a grid, known as the
+\emph{signature} of the function. A primitive function, $f_0$, having signature
+$\gr{S}$, is a first-order function from arrays to values, $f_0: (\gr{S} \to V) \to
+V$. It maps arrays equivalent to $\gr{S}\to V$ to values. (By convention,
+primitive functions have a subscript~0.) For example, the signature of primitive
+binary addition is $\mathbf{2}$:
 \begin{equation*}
 +_0: (\mathbf{2} \to V) \to V.
 \end{equation*}
@@ -308,12 +308,18 @@ $\unit\to V$. Hence we might equivalently write:
 +_0: (\mathbf{2} \to V) \to (\unit \to V).
 \end{equation*}
 
+For most primitive functions one might think of, the signature is in fact a
+standard grid: usually $\one$, $\two$, or sometimes $\three$. That is, there are
+no functions which operate on ranges and in particular no `array functions.'
+Perhaps the only exceptions are \texttt{INDEX()} and \texttt{MATCH()}. For this
+version, we assume that all signatures are standard grids.
+
+An \emph{simple application array} is an array $A$ of type (strictly, isomorphic
+to the type) $\unit \oplus \gr{G} \to P$, where $A$ decomposes as $(\unit\to F, \GG \to
+V)$. That is, it is a pair of a primitive function and an array of values. The
+interpretation here is that the values are the arguments to the function. 
 
 
-
-Fix, once and for all, a grid, $\gr{a} \sim \mathbf{1}$. An \emph{application
-array} is an array $A$ of type $\gr{a}\oplus\gr{G} \to \alpha$ for some grid
-$\gr{G}$ and array $\alpha$. 
 
 For example, consider the case where $\alpha = P$. Then the array has type
 $\gr{a}\oplus\gr{G} \to P$. The intent is that the $\gr{a}$ component should be a
