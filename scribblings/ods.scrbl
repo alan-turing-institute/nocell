@@ -2,10 +2,10 @@
 
 @title[#:tag "ods"]{Grid-to-Ods Backend}
 
-@(require (@for-label nocell/ods/ods nocell/sheet/sheet sxml racket/system racket/file
+@(require (@for-label nocell/sheet/ods nocell/sheet/sheet sxml racket/system racket/file
             @except-in[racket/base date? date date-month date-day date-year struct:date]))
 
-@defmodule[nocell/ods/ods]{The @racketmodname[nocell/ods/ods] library
+@defmodule[nocell/sheet/ods]{The @racketmodname[nocell/sheet/ods] library
 provides utilities to create spreadsheet files from a @exec{sheet} @racket[spreadsheet].
 Currently the library supports @bold{fods} (opens in LibreOffice) and @bold{ods}
 format (opens in both LibreOffice and Excel).
