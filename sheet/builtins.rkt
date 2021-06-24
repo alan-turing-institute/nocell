@@ -198,7 +198,7 @@ Arguments should be implicitly "promoted" in the following way:
 
 #|
 
-Note: the following are in the OpenFormula "Small" group but do not have a counterpart in Grid
+Note: the following are in the OpenFormula "Small" group but do not have a counterpart in Sheet
 
 Infix Operator "&”; 
 Postfix Operator “%”;

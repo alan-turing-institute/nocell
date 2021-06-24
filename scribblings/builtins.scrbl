@@ -2,14 +2,14 @@
 
 @require[
   @for-label[@except-in[racket/base date? date date-month date-day date-year struct:date]]
-  @for-label[nocell/grid/builtins]]
+  @for-label[nocell/sheet/builtins]]
 
 @title{Built-in Functions}
 
-@defmodule[nocell/grid/builtins]{The @racketmodname[nocell/grid/builtins] library
+@defmodule[nocell/sheet/builtins]{The @racketmodname[nocell/sheet/builtins] library
 defines all the primitive functions of Grid.}
 
-The following forms are all re-exported by @racketmodname[nocell/grid/grid].
+The following forms are all re-exported by @racketmodname[nocell/sheet/sheet].
 
 @defthing[builtins (hash/c symbol? builtin-type? #:immutable #t)]{
 

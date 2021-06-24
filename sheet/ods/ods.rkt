@@ -2,8 +2,8 @@
 
 (require sxml
          "./namespaces.rkt"
-         "../grid/grid.rkt"
-         "../grid/builtins.rkt"
+         "../sheet.rkt"
+         "../builtins.rkt"
          "./column-letters.rkt"
          racket/format
          racket/function
@@ -15,7 +15,7 @@
          racket/match)
 
 #| 
-A backend for grid which produces Open Document Format spreadsheets. 
+A backend for Sheet which produces Open Document Format spreadsheets. 
 See the github wiki page for accompanying notes: 
 https://github.com/alan-turing-institute/nocell/wiki/Creating-ODF-files-from-scratch 
 
@@ -23,12 +23,12 @@ Note: the commands sxml->extended-ods, called externally from sxml->ods, require
 that an executable `zip` program is in the user's path. 
 
 1. Interface
-2. Conversion of grid program to sxml-program structure with content and styles.
+2. Conversion of Sheet spreadsheet to sxml-spreadsheet structure with content and styles.
 3. Layout
 4. References.
 5. Formulas.
-6. Adding necessary headers to sxml-program for flat ods or extended ods. 
-7. Serialisation - convert sxml-program to flat or extended ods (includes zipping).
+6. Adding necessary headers to sxml-spreadsheet for flat ods or extended ods. 
+7. Serialisation - convert sxml-spreadsheet to flat or extended ods (includes zipping).
 8. Tests.
 
 |#
@@ -38,37 +38,37 @@ that an executable `zip` program is in the user's path.
 
 (provide
  (contract-out
-  [sxml->ods (->* (sxml-program?)
+  [sxml->ods (->* (sxml-spreadsheet?)
                   (#:type (or/c 'ods 'fods))
                   bytes?)]
-  [grid-program->sxml (->* (program?)
+  [sheet-spreadsheet->sxml (->* (spreadsheet?)
                            (#:blank-rows-before (listof integer?)
                             #:blank-cols-before (listof integer?))
-                           sxml-program?)]
+                           sxml-spreadsheet?)]
   [bytes->file (-> bytes? string? exact-nonnegative-integer?)]))          
 
 
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Conversion of grid program to sxml-program structure with content and styles.
+;; Conversion of Sheet spreadsheet to sxml-spreadsheet structure with content and styles.
 
-(struct sxml-program (content styles) #:transparent)
+(struct sxml-spreadsheet (content styles) #:transparent)
 (struct indices (row column) #:transparent)
 
-;; grid-program->sxml : program? [listof? integer?] -> sxml-program?
-(define (grid-program->sxml program
+;; sheet-spreadsheet->sxml : spreadsheet? [listof? integer?] -> sxml-spreadsheet?
+(define (sheet-spreadsheet->sxml spreadsheet
                             #:blank-rows-before [blank-rows-before '()]
                             #:blank-cols-before [blank-cols-before '()])
-  (sxml-program  (list `(office:automatic-styles
+  (sxml-spreadsheet  (list `(office:automatic-styles
                          (style:style (@ (style:family "table-row") (style:name "row-default"))
                                       (style:table-row-properties (@ (style:row-height "16pt")
                                                                      (style:use-optimal-row-height "true"))))
-                         ,@(column-styles (car (program-sheets program))))
+                         ,@(column-styles (car (spreadsheet-sheets spreadsheet))))
                        `(office:body
-                         ,@(map (curryr grid-sheet->sxml
+                         ,@(map (curryr sheet-sheet->sxml
                                         #:blank-rows-before blank-rows-before
                                         #:blank-cols-before blank-cols-before)
-                                (program-sheets program))))
+                                (spreadsheet-sheets spreadsheet))))
                        
                  '(office:styles
                    (style:style (@ (style:family "table-cell") (style:name "default"))
@@ -96,8 +96,8 @@ that an executable `zip` program is in the user's path.
                  ))
                                
 
-;; grid-sheet->sxml : sheet? [listof? integer?] -> pair?
-(define (grid-sheet->sxml sheet
+;; sheet-sheet->sxml : sheet? [listof? integer?] -> pair?
+(define (sheet-sheet->sxml sheet
                           #:blank-rows-before [blank-rows-before '()]
                           #:blank-cols-before [blank-cols-before '()])
 
@@ -111,7 +111,7 @@ that an executable `zip` program is in the user's path.
          (let ([new-rows (append
                           (insert-rows-before i #:blank-rows-before blank-rows-before)
                           (list
-                           (grid-row->sxml row
+                           (sheet-row->sxml row
                                            i
                                            #:cell-hash cell-hash
                                            #:blank-rows-before blank-rows-before
@@ -119,8 +119,8 @@ that an executable `zip` program is in the user's path.
            (append row-list new-rows))))))
    
 
-;; grid-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> pair?
-(define (grid-row->sxml row
+;; sheet-row->sxml : [listof cell?] integer? [hash-of label? indices?] [listof? integer?]  -> pair?
+(define (sheet-row->sxml row
                         i
                         #:cell-hash [cell-hash (hash)]
                         #:blank-rows-before [blank-rows-before '()]
@@ -131,15 +131,15 @@ that an executable `zip` program is in the user's path.
                         (let ([new-cells (append
                                           (insert-cells-before j #:blank-cols-before blank-cols-before)
                                           (list
-                                           (grid-cell->sxml cell
+                                           (sheet-cell->sxml cell
                                                             (indices i j)
                                                             #:cell-hash cell-hash
                                                             #:blank-rows-before blank-rows-before
                                                             #:blank-cols-before blank-cols-before)))])
                           (append cell-list new-cells)))))
 
-;; grid-cell->sxml : cell? indices? [hash-of label? indices?] [listof? integer?]  -> pair?
-(define (grid-cell->sxml cell
+;; sheet-cell->sxml : cell? indices? [hash-of label? indices?] [listof? integer?]  -> pair?
+(define (sheet-cell->sxml cell
                          pos
                          #:cell-hash [cell-hash (hash)]
                          #:blank-rows-before [blank-rows-before '()]
@@ -148,7 +148,7 @@ that an executable `zip` program is in the user's path.
          empty-cell]
         [else 
          `(table:table-cell (@ (table:style-name ,(style-cell (cell-attrs cell))))
-                            ,(grid-expression->sxml-attributes
+                            ,(sheet-expression->sxml-attributes
                               (cell-xpr cell)
                               pos
                               #:cell-hash cell-hash
@@ -156,9 +156,9 @@ that an executable `zip` program is in the user's path.
                               #:blank-cols-before blank-cols-before))]))
   
 
-;; grid-expression->sxml-attributes : expression? indices? [hash-of label? indices?]
+;; sheet-expression->sxml-attributes : expression? indices? [hash-of label? indices?]
 ;; [listof? integer?]  -> string?
-(define (grid-expression->sxml-attributes xpr
+(define (sheet-expression->sxml-attributes xpr
                                           pos
                                           #:cell-hash [cell-hash (hash)]
                                           #:blank-rows-before [blank-rows-before '()]
@@ -177,7 +177,7 @@ that an executable `zip` program is in the user's path.
      `(@ (table:formula ,(hash-ref errors xpr)))]
 
     [(reference? xpr)
-     `(@ (table:formula ,(grid-reference->openformula xpr
+     `(@ (table:formula ,(sheet-reference->openformula xpr
                                                       pos
                                                       #:cell-hash cell-hash
                                                       #:blank-rows-before blank-rows-before
@@ -267,7 +267,7 @@ that an executable `zip` program is in the user's path.
               
 
 ;; locate-labelled-cells : sheet? -> [hash-of label? indices?]
-;; Determine the grid locations of labelled cells
+;; Determine the sheet locations of labelled cells
 (define (locate-labelled-cells sheet)
   (for*/hash ([(row i) (in-indexed (sheet-rows sheet))]
               [(cell j) (in-indexed row)]
@@ -277,11 +277,11 @@ that an executable `zip` program is in the user's path.
 
 
 ;;get-output-index : indices? [listof integer?] -> integer?
-;; map grid-index to outputted spreadsheet index along the given dimension
-(define (get-output-index grid-index blanks-before)
-  (cond [(empty? blanks-before) grid-index]
-        [else (define blanks-sum (apply + (take blanks-before (add1 grid-index))))
-              (+ grid-index blanks-sum)]))
+;; map sheet-index to outputted spreadsheet index along the given dimension
+(define (get-output-index sheet-index blanks-before)
+  (cond [(empty? blanks-before) sheet-index]
+        [else (define blanks-sum (apply + (take blanks-before (add1 sheet-index))))
+              (+ sheet-index blanks-sum)]))
 
 
 ;; style-cell : list? -> string?
@@ -299,8 +299,8 @@ that an executable `zip` program is in the user's path.
 ;; ---------------------------------------------------------------------------------------------------
 ;; References
 
-;;grid-reference->openformula : expression? indices? [hash-of label? indices?] -> string?
-(define (grid-reference->openformula xpr [pos (indices 0 0)]
+;;sheet-reference->openformula : expression? indices? [hash-of label? indices?] -> string?
+(define (sheet-reference->openformula xpr [pos (indices 0 0)]
                                      #:cell-hash [cell-hash (hash)]
                                      #:blank-rows-before [blank-rows-before '()]
                                      #:blank-cols-before [blank-cols-before '()])
@@ -398,27 +398,27 @@ that an executable `zip` program is in the user's path.
                            #:blank-rows-before [blank-rows-before '()]
                            #:blank-cols-before [blank-cols-before '()])
 
-  ;;grid-application->openformula : application? -> string?
-  (define (grid-application->openformula app)
+  ;;sheet-application->openformula : application? -> string?
+  (define (sheet-application->openformula app)
     (if (not (builtin? (application-fn app)))
         (raise-user-error (string-append (~a (application-fn app) " function not in builtins"))) 
         (format-app app)))
        
   ;;format-binary : builtin? [listof expression?] -> string?
   (define (format-binary fn args)
-    (string-join (map grid-expression->openformula args) (~a fn)))
+    (string-join (map sheet-expression->openformula args) (~a fn)))
 
   ;;format-binary-str : string? [listof expression?] -> string?
   (define (format-binary-str fstr args)
     (string-append fstr "("
                    (string-join
-                    (map grid-expression->openformula args) ",")
+                    (map sheet-expression->openformula args) ",")
                    ")"))
 
   ;;format-unary : string? expression? -> string?
   (define (format-unary-str fstr arg)
     (string-append fstr "("
-                   (grid-expression->openformula arg)
+                   (sheet-expression->openformula arg)
                    ")"))
   
   ;;format-app : application? -> string?
@@ -436,7 +436,7 @@ that an executable `zip` program is in the user's path.
         ['remainder (string-append (format-binary-str "MOD" args) "*SIGN(" (~a (car args)) ")")]
         ['modulo (format-binary-str "MOD" args)]
         ;;unary basic maths
-        ['neg (string-append "-" (grid-expression->openformula (car args)))]
+        ['neg (string-append "-" (sheet-expression->openformula (car args)))]
         ['abs (format-unary-str "ABS" (car args))]
         ['sgn (format-unary-str "SIGN" (car args))]
         ['inv (format-unary-str "MINVERSE" (car args))]
@@ -484,23 +484,23 @@ that an executable `zip` program is in the user's path.
         [else (raise-user-error string-append (~a fn) " not yet supported")])))
     
  
-  ;;grid-expression->openformula : expression? -> string?
-  (define (grid-expression->openformula xpr)
+  ;;sheet-expression->openformula : expression? -> string?
+  (define (sheet-expression->openformula xpr)
     (cond
       [(string? xpr) xpr]
       [(number? xpr) (~a xpr)]
       [(boolean? xpr) (if xpr "TRUE()" "FALSE()")]
       [(error? xpr) (raise-user-error "error types not currently supported in formulae")]
-      [(reference? xpr) (grid-reference->openformula xpr
+      [(reference? xpr) (sheet-reference->openformula xpr
                                                      pos
                                                      #:cell-hash cell-hash
                                                      #:blank-rows-before blank-rows-before
                                                      #:blank-cols-before blank-cols-before)]
-      [(application? xpr) (string-append "(" (grid-application->openformula xpr) ")")]
+      [(application? xpr) (string-append "(" (sheet-application->openformula xpr) ")")]
       [(date? xpr) (format-date date)]
       [else (raise-user-error "unrecognised type")]))
 
-  (grid-application->openformula xpr))
+  (sheet-application->openformula xpr))
 
 
 ;;make-date : [listof integer?] -> date?
@@ -516,7 +516,7 @@ that an executable `zip` program is in the user's path.
                  ")"))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Adding necessary headers to sxml-program for flat ods or extended ods. 
+;; Adding necessary headers to sxml-spreadsheet for flat ods or extended ods. 
 ;; Used in sxml->flat-ods and sxml->extended-ods
 
 (define PI '(*PI* xml "version=\"1.0\" encoding=\"UTF-8\""))
@@ -524,16 +524,16 @@ that an executable `zip` program is in the user's path.
 (define TYPE `(@ (office:version "1.3")
                  (office:mimetype ,MIME)))
 
-(define (flat-sxml sxml-program)
+(define (flat-sxml sxml-spreadsheet)
   `(*TOP* ,NS ,PI
           (office:document ,TYPE
-                           ,(sxml-program-styles sxml-program)
-                           ,@(sxml-program-content sxml-program))))
+                           ,(sxml-spreadsheet-styles sxml-spreadsheet)
+                           ,@(sxml-spreadsheet-content sxml-spreadsheet))))
 
-(define (extended-sxml sxml-program)
+(define (extended-sxml sxml-spreadsheet)
   (list MIME 
-        (xml-content (sxml-program-content sxml-program))
-        (xml-styles (sxml-program-styles sxml-program))
+        (xml-content (sxml-spreadsheet-content sxml-spreadsheet))
+        (xml-styles (sxml-spreadsheet-styles sxml-spreadsheet))
         xml-manifest))
 
 (define (xml-content sxml-content)
@@ -558,26 +558,26 @@ that an executable `zip` program is in the user's path.
             (@ (manifest:full-path "styles.xml") (manifest:media-type "text/xml"))))))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Serialisation - convert sxml-program to flat or extended ods byte string. Uses filesystem commands.
+;; Serialisation - convert sxml-spreadsheet to flat or extended ods byte string. Uses filesystem commands.
 ;; WARNING: uses (system zip) because Racket file/zip 
 ;; doesn't support leaving the first file in the archive uncompressed.
 
-;;sxml->ods-bytes : sxml-program? -> bytes? 
-(define (sxml->ods sxml-program
+;;sxml->ods-bytes : sxml-spreadsheet? -> bytes? 
+(define (sxml->ods sxml-spreadsheet
                    #:type [type 'fods])
   (cond
-    [(eq? type 'fods) (sxml->flat-ods-bytes sxml-program)]
-    [(eq? type 'ods) (sxml->extended-ods-bytes sxml-program)]
+    [(eq? type 'fods) (sxml->flat-ods-bytes sxml-spreadsheet)]
+    [(eq? type 'ods) (sxml->extended-ods-bytes sxml-spreadsheet)]
     [else (error "unrecognised type")]))
 
-;;sxml->flat-ods-bytes : sxml-program? -> bytes?
-(define (sxml->flat-ods-bytes sxml-program)
+;;sxml->flat-ods-bytes : sxml-spreadsheet? -> bytes?
+(define (sxml->flat-ods-bytes sxml-spreadsheet)
   (let ([op1 (open-output-bytes)])
-    (srl:sxml->xml (flat-sxml sxml-program) op1)
+    (srl:sxml->xml (flat-sxml sxml-spreadsheet) op1)
     (get-output-bytes op1)))
 
-;;sxml->extended-ods-bytes : sxml-program? -> bytes?
-(define (sxml->extended-ods-bytes sxml-program)
+;;sxml->extended-ods-bytes : sxml-spreadsheet? -> bytes?
+(define (sxml->extended-ods-bytes sxml-spreadsheet)
 
   (define (add-to-tmp fn) (path->string (build-path tmp fn)))
   
@@ -589,7 +589,7 @@ that an executable `zip` program is in the user's path.
   (define filelist (list "mimetype" "content.xml" "styles.xml" "META-INF/manifest.xml"))
 
   (for ([fn filelist]
-        [xml (extended-sxml sxml-program)])
+        [xml (extended-sxml sxml-spreadsheet)])
     (call-with-output-file (add-to-tmp fn)
       (lambda (out) (srl:sxml->xml xml out))))
   
@@ -628,13 +628,13 @@ that an executable `zip` program is in the user's path.
 
   ;; number?
   (check-equal?
-   (grid-cell->sxml (cell 1 '()) 0)
+   (sheet-cell->sxml (cell 1 '()) 0)
    '(table:table-cell
      (@ (table:style-name "plain"))
      (@ (office:value-type "float") (office:value "1"))))
   
   (check-equal?
-   (grid-cell->sxml (cell 42.0 '()) 0)
+   (sheet-cell->sxml (cell 42.0 '()) 0)
    '(table:table-cell
      (@ (table:style-name "plain"))
      (@ (office:value-type "float") (office:value "42.0"))))
@@ -642,13 +642,13 @@ that an executable `zip` program is in the user's path.
 
   ;; string?
   (check-equal?
-   (grid-cell->sxml (cell "" '()) 0)
+   (sheet-cell->sxml (cell "" '()) 0)
    '(table:table-cell
      (@ (table:style-name "plain"))
      (@ (office:value-type "string") (office:string-value ""))))
 
   (check-equal?
-   (grid-cell->sxml (cell "hello" '()) 0)
+   (sheet-cell->sxml (cell "hello" '()) 0)
    '(table:table-cell
      (@ (table:style-name "plain"))
      (@ (office:value-type "string") (office:string-value "hello"))))
@@ -656,14 +656,14 @@ that an executable `zip` program is in the user's path.
   
   ;; boolean?
   (check-equal?
-   (grid-cell->sxml (cell #t '()) 0)
+   (sheet-cell->sxml (cell #t '()) 0)
    '(table:table-cell
      (@ (table:style-name "plain"))
      (@ (office:value-type "boolean") (office:boolean-value "true"))))
 
 
   (check-equal?
-   (grid-cell->sxml (cell #f '()) 0)
+   (sheet-cell->sxml (cell #f '()) 0)
    '(table:table-cell
      (@ (table:style-name "plain"))
      (@ (office:value-type "boolean") (office:boolean-value "false"))))
@@ -671,30 +671,30 @@ that an executable `zip` program is in the user's path.
    
   ;; nothing?
   (check-equal?
-   (grid-cell->sxml (cell 'nothing '()) 0)
+   (sheet-cell->sxml (cell 'nothing '()) 0)
    '(table:table-cell))
 
   ;; error?
   (check-equal?
-   (grid-cell->sxml (cell 'error:arg '()) 0)
+   (sheet-cell->sxml (cell 'error:arg '()) 0)
    '(table:table-cell
      (@ (table:style-name "plain"))
      (@ (table:formula "#VALUE!"))))
 
   (check-equal?
-   (grid-cell->sxml (cell 'error:arg '()) 0)
+   (sheet-cell->sxml (cell 'error:arg '()) 0)
    '(table:table-cell 
      (@ (table:style-name "plain"))
      (@ (table:formula "#VALUE!"))))
 
   (check-equal?
-   (grid-cell->sxml (cell 'error:undef '()) 0)
+   (sheet-cell->sxml (cell 'error:undef '()) 0)
    '(table:table-cell 
      (@ (table:style-name "plain"))
      (@ (table:formula "#N/A"))))
 
   (check-equal?
-   (grid-cell->sxml (cell 'error:val '()) 0)
+   (sheet-cell->sxml (cell 'error:val '()) 0)
    '(table:table-cell 
      (@ (table:style-name "plain"))
      (@ (table:formula "#N/A"))))
@@ -862,10 +862,10 @@ that an executable `zip` program is in the user's path.
   (define absolute-cell (cell (cell-reference (absolute-location "cell5")) '()))
 
   (check-equal?
-   (grid-reference->openformula (cell-xpr absolute-cell) #:cell-hash cell-hash)
+   (sheet-reference->openformula (cell-xpr absolute-cell) #:cell-hash cell-hash)
    "$B$2")
   (check-equal?
-   (grid-reference->openformula (cell-reference (absolute-location "nonexistent"))
+   (sheet-reference->openformula (cell-reference (absolute-location "nonexistent"))
                                 #:cell-hash cell-hash)
    "#N/A")
 
@@ -875,7 +875,7 @@ that an executable `zip` program is in the user's path.
   ;; in the above cell-hash cell1 is 00 and cell4 is 10, so indices 02 should return 12 (i.e."=C2")
   (define relative-cell (cell (cell-reference (relative-location "cell1" "cell4")) '()))
   (check-equal?
-   (grid-reference->openformula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
+   (sheet-reference->openformula (cell-xpr relative-cell) (indices 0 2) #:cell-hash cell-hash)
    "C2")
 
   (check-equal? (get-relative-formula (indices 20 10)) "K21")
@@ -887,14 +887,14 @@ that an executable `zip` program is in the user's path.
 
   ;;range-reference?
   (check-equal?
-   (grid-reference->openformula
+   (sheet-reference->openformula
     (range-reference (absolute-location "cell1") (absolute-location "cell3"))
     #:cell-hash cell-hash)
    "$A$1:$C$1")
   
   ;;multiple cells test
   (check-equal?
-   (grid-sheet->sxml (sheet
+   (sheet-sheet->sxml (sheet
                       (list (list (cell 1 '())) (list (cell 2 '())))))
    `(office:spreadsheet
      (table:table
@@ -912,7 +912,7 @@ that an executable `zip` program is in the user's path.
 
   ;;empty rows test
   (check-equal?
-   (grid-sheet->sxml (sheet (list (list (cell 1 '()))))
+   (sheet-sheet->sxml (sheet (list (list (cell 1 '()))))
                      #:blank-rows-before '(2))
    `(office:spreadsheet
      (table:table
@@ -928,7 +928,7 @@ that an executable `zip` program is in the user's path.
 
   ;;empty cols test
   (check-equal?
-   (grid-sheet->sxml (sheet (list (list (cell 1 '()))))
+   (sheet-sheet->sxml (sheet (list (list (cell 1 '()))))
                      #:blank-cols-before '(2))
    `(office:spreadsheet
      (table:table
