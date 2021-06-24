@@ -2,12 +2,12 @@
 
 #|
 
-Some larger examples of Grid
+Some larger examples of sheet
 
 |#
 
 (require racket/list)
-(require "../grid/grid.rkt")
+(require "../sheet/sheet.rkt")
 
 (provide multiplication-table
          bubbly
@@ -17,7 +17,7 @@ Some larger examples of Grid
 ;; A spreadsheet of numbers
 
 (define multiplication-table
-  (program
+  (spreadsheet
    (list (sheet 
           (for/list ([i 12])
             (for/list ([j 12])
@@ -71,7 +71,7 @@ Some larger examples of Grid
      (map (λ (c) (label-and-ref-cell-with-row-index (+ row-index 1) c)) row))))
 
 (define bubbly
-  (program (list (sheet bubbled-rows))))
+  (spreadsheet (list (sheet bubbled-rows))))
 
 
 ;; a simple household budget
@@ -83,7 +83,7 @@ Some larger examples of Grid
   (cell-reference (absolute-location lab)))
 
 (define budget
-  (program
+  (spreadsheet
    (list (sheet
           (list
            (list (cell "Rent") (labelled-cell 700 "Rent"))

@@ -1,9 +1,9 @@
 #lang racket/base
 
-(require "./grid-examples.rkt"
-         "../ods/ods.rkt")
+(require "./sheet-examples.rkt"
+         "../sheet/ods/ods.rkt")
 
-(let ([multi-table-sxml (grid-program->sxml multiplication-table)])
+(let ([multi-table-sxml (sheet-spreadsheet->sxml multiplication-table)])
 
   (let ([fods-bytes (sxml->ods multi-table-sxml #:type "fods")])
     (bytes->file fods-bytes "multi-flat-bytes.xml"))
@@ -12,7 +12,7 @@
     (bytes->file ods-bytes "multi-extended-bytes.ods")))
 
 
-(let ([bubbly-sxml (grid-program->sxml bubbly)])
+(let ([bubbly-sxml (sheet-spreadsheet->sxml bubbly)])
   
   (let ([fods-bytes (sxml->ods bubbly-sxml #:type "fods")])
     (bytes->file fods-bytes "bubbly-flat-bytes.xml"))
@@ -21,7 +21,7 @@
     (bytes->file ods-bytes "bubbly-extended-bytes.ods")))
 
 
-(let ([budget-sxml (grid-program->sxml budget
+(let ([budget-sxml (sheet-spreadsheet->sxml budget
                                        #:blank-rows-before '(2 0 0 0 1 0 1)
                                        #:blank-cols-before '(0 0 5))])
    (let ([fods-bytes (sxml->ods budget-sxml #:type "fods")])
