@@ -7,25 +7,25 @@
   @for-label[@except-in[racket/base date? date date-month date-day date-year struct:date]]]
 
 
-@(require (for-label nocell/grid/grid
-                     nocell/grid/builtins))
+@(require (for-label nocell/sheet/sheet
+                     nocell/sheet/builtins))
 
 @title{The Grid Language}
 @author["James Geddes" "Oliver Strickson" "Callum Mole"]
 
 @section{Structure}
 
-@defmodule[nocell/grid/grid]{The @racketmodname[nocell/grid/grid] library
-defines the Grid language.}
+@defmodule[nocell/sheet/sheet]{The @racketmodname[nocell/sheet/sheet] library
+defines the Sheet language.}
 
-Grid is a language for describing spreadsheets, although to call it a
+Sheet is a language for describing spreadsheets, although to call it a
 ``language'' is perhaps overblown. It is perhaps best thought of as ``assembly
-language''for spreadsheets. A Grid program may be straightforwardly converted
+language''for spreadsheets. A Sheet spreadsheet may be straightforwardly converted
 into a specific spreadsheet application, such as the Open Document Format for
 Office Applications (ODF).
 
-The following is a conceptual definition of the structure of a Grid
-program. Certain non-terminals are still undefined; these have an ellipsis in
+The following is a conceptual definition of the structure of a Sheet
+spreadsheet. Certain non-terminals are still undefined; these have an ellipsis in
 place of a definition and are omitted in the structure definitions.
 
 @(define (term name)
@@ -47,8 +47,8 @@ place of a definition and are omitted in the structure definitions.
 @(define (BNF-litalt . fields)
    (apply BNF-alt (map litchar (decode-content fields))))
 
-@BNF[(list @nonterm{program}
-           @BNF-seq[@nonterm{grid-meta}
+@BNF[(list @nonterm{spreadsheet}
+           @BNF-seq[@nonterm{sheet-meta}
                     @kleeneplus[@nonterm{sheet}]])
      (list @nonterm{sheet}
            @BNF-seq[@nonterm{sheet-meta}
@@ -74,7 +74,7 @@ place of a definition and are omitted in the structure definitions.
      (list @nonterm{application}
            @BNF-seq[@nonterm{builtin} @kleenestar[@nonterm{expression}]])
      (list @nonterm{label} @litchar{string?})                           
-     (list @nonterm{grid-meta}
+     (list @nonterm{sheet-meta}
            @BNF-etc)
      (list @nonterm{sheet-meta}
            @BNF-etc)
@@ -122,13 +122,13 @@ place of a definition and are omitted in the structure definitions.
 
 @subsection{Sheets and Cells}
 
-@deftogether[(@defstruct*[program ([sheets (listof sheet?)]) #:transparent]
+@deftogether[(@defstruct*[spreadsheet ([sheets (listof sheet?)]) #:transparent]
               @defstruct*[sheet ([rows (listof (listof cell?))]) #:transparent]
               @defstruct*[cell ([xpr expression?] [attrs list?]) #:transparent]
               @defstruct*[(labelled-cell cell) ([lbl string?]) #:transparent])]{
 
     A `spreadsheet,' such as an Excel document, is a list of worksheets, each of
-    which is a two-dimensional array of cells. In Grid, a worksheet is called a
+    which is a two-dimensional array of cells. In Sheet, a worksheet is called a
     @racket[sheet] and is represented as a list of rows, each of which is a list
     of cells. A labelled cell is just like a cell, except that it carries a
     label.
@@ -157,7 +157,7 @@ In most spreadsheet programs, such as Excel, the content of a cell may be either
 the literal form of a value or a formula representing a computation. Formulas
 are distinguished from values by starting with `@tt{=}.'
 
-In Grid, both values and formulas are represented by @deftech{expressions}. An
+In Sheet, both values and formulas are represented by @deftech{expressions}. An
 expression is either a @tech{value} or an @tech{application}. Applications
 themselves can contain expressions as arguments (but since this is a first-order
 language, the function is not an expression).
@@ -202,7 +202,7 @@ An @deftech{atomic value} is a number, a string, a boolean, a date, an error, or
 `nothing.' A date is simply a year, a month, and a day. No attempt is made to
 ensure that a particular day of the month exists. The special value
 @racket['nothing] represents an empty cell. Any cells which exist in the final
-spreadsheet but which were not specified in the Grid programme (for example,
+spreadsheet but which were not specified in the Sheet programme (for example,
 cells to the right of or below those specified) implicitly contain the value
 @racket['nothing].
 
@@ -231,7 +231,7 @@ An @deftech{application} represents the application of a built-in function to
 arguments.
 
 To @deftech{evaluate} an expression means to reduce it to an atomic value. Since
-errors are atomic values and there are no unbounded loops in Grid (at least, we
+errors are atomic values and there are no unbounded loops in Sheet (at least, we
 assume that ``circular references'' are forbidden), the evaluation of an
 expression always terminates. The atomic value of a matrix is its top-left
 element, and the value of a reference is the referent.
@@ -246,7 +246,7 @@ change: a reference to a cell into which a value was spilled will now give the
 spilled value whereas, previously, that cell would have been treated as empty.}
 
 A @deftech{reference} refers to the value of another cell or a range of cells. A
-@deftech{location} identifies the particular cell in question. Grid has two
+@deftech{location} identifies the particular cell in question. Sheet has two
 methods of locating a cell: either by reference to directly to a labelled cell,
 by means of its label (known as an @deftech{absolute location}); or by an
 indirect reference, as an offset from the current cell (known as a
@@ -258,7 +258,7 @@ To refer to a single cell requires a single location; to refer to a range of
 cell reqires two locations: the top-left and bottom-right cells.
 
 @margin-note{A @emph{named range} is a symbol which stands for a range. For now,
-Grid does not support named ranges.}
+Sheet does not support named ranges.}
 
 
 @include-section["builtins.scrbl"]
