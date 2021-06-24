@@ -31,7 +31,7 @@ This module exports structure definitions which define a Sheet spreadsheet
 
 (struct spreadsheet (sheets) #:transparent)
 (struct sheet (rows) #:transparent)
-(struct cell (xpr) #:transparent)
+(struct cell (xpr attrs) #:transparent)
 (struct labelled-cell cell (lbl) #:transparent)
 
 (provide
@@ -41,9 +41,11 @@ This module exports structure definitions which define a Sheet spreadsheet
   (struct sheet
     ([rows (listof (listof cell?))]))
   (struct cell
-    ([xpr expression?]))
+    ([xpr expression?]
+     [attrs list?]))
   (struct labelled-cell
     ([xpr expression?]
+     [attrs list?]
      [lbl string?]))))
 
 ;; --- References

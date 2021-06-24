@@ -21,7 +21,7 @@ Some larger examples of sheet
    (list (sheet 
           (for/list ([i 12])
             (for/list ([j 12])
-              (cell (* (+ i 1) (+ j 1)))))))))
+              (cell (* (+ i 1) (+ j 1)) '())))))))
 
 ;; A row-by-row bubble sort
 
@@ -56,11 +56,12 @@ Some larger examples of sheet
   (bubble-one '("Geddes" "Strickson" "Mole" "Counsell" "MacKay") '() '()))
 
 (define (label-cell-with-row-index index c)
-  (labelled-cell c (format "~a-~a" c index)))
+  (labelled-cell c '() (format "~a-~a" c index)))
 
 (define (label-and-ref-cell-with-row-index index c)
   (labelled-cell
    (cell-reference (absolute-location (format "~a-~a" c (- index 1))))
+   '()
    (format "~a-~a" c index)))
 
 (define bubbled-rows
@@ -86,19 +87,19 @@ Some larger examples of sheet
   (spreadsheet
    (list (sheet
           (list
-           (list (cell "Rent") (labelled-cell 700 "Rent"))
-           (list (cell "Energy") (labelled-cell 100 "Energy") (labelled-cell (application '+ (list (ref-cell "Rent") (ref-cell "Energy"))) "cumsum1"))
-           (list (cell "Water") (labelled-cell 20 "Water") (labelled-cell (application '+ (list (ref-cell "Water") (ref-cell "cumsum1"))) "cumsum2"))
-           (list (cell "Council Tax") (labelled-cell 100 "Council Tax") (labelled-cell (application '+ (list (ref-cell "Council Tax") (ref-cell "cumsum2"))) "cumsum3"))
-            (list (cell "Total known costs") (labelled-cell
-                                              (application '= (list (cell-reference (absolute-location "cumsum3"))))
+           (list (cell "Rent" '()) (labelled-cell 700 '() "Rent"))
+           (list (cell "Energy" '()) (labelled-cell 100 '() "Energy") (labelled-cell (application '+ (list (ref-cell "Rent") (ref-cell "Energy"))) '() "cumsum1"))
+           (list (cell "Water" '()) (labelled-cell 20 '() "Water") (labelled-cell (application '+ (list (ref-cell "Water") (ref-cell "cumsum1"))) '() "cumsum2"))
+           (list (cell "Council Tax" '()) (labelled-cell 100 '() "Council Tax") (labelled-cell (application '+ (list (ref-cell "Council Tax") (ref-cell "cumsum2"))) '() "cumsum3"))
+            (list (cell "Total known costs" '()) (labelled-cell
+                                              (application '= (list (cell-reference (absolute-location "cumsum3")))) '()
                                               "Total"))
-           (list (cell "Income") (labelled-cell 1800 "Income"))
-           (list (cell "Spending budget") (cell
+           (list (cell "Income" '()) (labelled-cell 1800 '() "Income"))
+           (list (cell "Spending budget" '()) (cell
                                             (application '-
                                                          (list
                                                           (cell-reference (absolute-location "Income"))
-                                                          (cell-reference (absolute-location "Total")))))))))))
+                                                          (cell-reference (absolute-location "Total")))) '())))))))
                   
                   
 
