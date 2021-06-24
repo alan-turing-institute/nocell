@@ -14,8 +14,8 @@
                     [date? gregor:date?])
          whatnow/forecast
          whatnow/schedule
-         "../grid/grid.rkt"
-         "../ods/ods.rkt")
+         "../sheet/sheet.rkt"
+         "../sheet/ods/ods.rkt")
 
 ;; ----------------------------------------
 ;; Utility
