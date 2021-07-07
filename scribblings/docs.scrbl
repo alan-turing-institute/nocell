@@ -13,7 +13,7 @@ You can see the source code at
 
 @; ------------------------------------------------------------------------
 @include-section["cell.scrbl"]
-@include-section["grid.scrbl"]
+@include-section["sheet.scrbl"]
 @include-section["ods.scrbl"]
 
 @index-section[]

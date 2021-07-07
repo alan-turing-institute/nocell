@@ -1,0 +1,568 @@
+\documentclass[11pt]{article}
+\usepackage{graphicx}
+%\usepackage{grffile}
+%\usepackage{longtable}
+%\usepackage{wrapfig}
+%\usepackage{rotating}
+%\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+%\usepackage{capt-of}
+\usepackage{hyperref}
+%\usepackage{fontspec} -- was added by org-mode
+%\usepackage{newfloat}
+%\usepackage{minted} -- was added by org-mode
+\usepackage{booktabs}
+\newcommand{\gr}[1]{\mathfrak{#1}}
+\newcommand{\GG}{\gr{G}}
+\newcommand{\VV}{\mathbb{V}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\void}{\varnothing}
+\newcommand{\unit}{\bullet}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\two}{\mathbf{2}}
+\newcommand{\three}{\mathbf{3}}
+\DeclareMathOperator{\reduce}{reduce}
+\DeclareMathOperator{\map}{map}
+\DeclareMathOperator{\zipWith}{zipWith}
+\DeclareMathOperator{\fold}{fold}
+\DeclareMathOperator{\scan}{scan}
+\author{James Geddes}
+\date{\today}
+\title{Grid types}
+\hypersetup{
+ pdfauthor={James Geddes},
+ pdftitle={Grid types},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 27.2}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Our language Cell exports a `generalised spreadsheet,' which is then processed
+by Grid to produce an actual spreadsheet. This note is an attempt to describe a
+possible definition for a `generalised spreadsheet.'
+
+The language Remora
+\cite{slepak:array:2014,remora:intro:2019,slepak:semantics:2019} resurrects the
+idea of array-based programming that started with APL and J. Arrays look ideal
+as a kind of grid-like data structure with which to generalise the
+two-dimensional spreadsheet grid. However, to be usable as a spreadsheet, the
+structure used by Grid must support expressions, which typically don't have the
+form of a Remora-type array.
+
+Recently Gibbons \cite{gibbons:aplicative:2017} generalised Remora's arrays to
+what he calls `applicative, Naperian functors.' These are essentially container
+types which support traversals, for which there is an `index' type such that
+values of the container type are representable as maps from the index type to
+the thing contained. For example, vectors of int of length 5 are equivalent to
+maps from the set \((0, 1, 2, 3, 4)\) to the ints. The nice thing about these
+types is that they seem to suport all the nice things one would want of arrays
+(folds and so on) and are `lineariseable.'
+
+It looks like applicative, Naperian functors are sufficiently general to
+suppport expressions. However, they come with an awful lot of PL
+machinery. Instead, in this note, we propose to start from the index types, and
+build up arrays from there. The hope is that, first, all the properties we want
+will be captured by some simple properties of the index types; and, second, that
+this will provide a sufficiently rich set of array-like structures to capture
+everything we need for Grid.
+
+
+\section{Grids, vectors, and arrays}
+
+A \emph{grid} is a totally ordered, finite set. If \(\GG\) is a grid, we denote
+the ordering on \(\GG\) by \(<\) (at least when there is no confusion as to
+which grid the order refers). Two grids, \(\gr{G}\) and \(\gr{H}\), are
+\emph{isomorphic}, written \(\gr{G}\sim \gr{H}\), if there is an order-preserving
+bijection between them. It is clear that all grids are isomorphic to one of the
+bounded naturals, \((0, 1, \dotsc, N-1)\) for some \(N\). (Proof?) However, in
+Cell we distinguish grids that are isomorphic but not identical.
+
+We write \(\void\) for the empty grid (which is unique) and $\unit$ for a
+distinguished grid with a single element. 
+
+Fix, once and for all, a set, \(P\), of \emph{primitives}. (We will later choose
+the primitives to be the atomic types of spreadsheets together with the
+first-order functions. The primitives are the types of the values that go in
+cells in a spreadsheet.) An \emph{array} is a map $\gr{G} \to P$, where $\gr{G}$
+is any grid. Suppose $X$ is an array: we call a map $\gr{G} \to X$ a \emph{vector
+of $X$}. (A vector of $X$ is also an array, of course.)
+
+\emph{Example:} Given some primitive, say `42', the map $\unit \to P$ that assigns 42
+to the single element of $\unit$ is an array. We write this array as simply the
+value: \verb|42|.
+
+\subsection{Direct sums of grids}
+
+Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids. The \emph{direct sum},
+\(\bigoplus_i \GG_i\), is a grid such that
+\begin{enumerate}
+\item The set \(\bigoplus_i \GG_i\) is the disjoint union of the \(\GG_i\);
+\item \(g<h\) in \(\bigoplus \GG_i\) if either (i) \(g, h\in \GG_i\) for some \(i\) and \(g<h\)
+in \(\GG_i\) or (ii) \(g\in\GG_i\) and \(h\in\GG_j\) and \(i < j\).
+\end{enumerate}
+That is, the direct sum is what you get if you `line up the component grids in
+order.' We write the direct sum of two grids \(\gr{G}\) and \(\gr{H}\) as
+\(\gr{G}\oplus \gr{H}\). The direct sum of no grids is $\void$ and, for any grid
+$\GG$, \(\GG\oplus\void = \GG\). For any \(X\), a map \(\bigoplus \GG_i\to X\) is
+equivalent to an \(N\)-tuple of maps \((f_1, f_2, \dots, f_N)\), where \(f_i :
+\GG_i\to X\).
+
+The `standard grid of length $n$', denoted $\mathbf{n}$, is
+\begin{equation*}
+\mathbf{n} \equiv \bigoplus_{i=0}^{n-1} \unit.
+\end{equation*}
+
+\emph{Example}: Let $\one = \bigoplus\unit $, $\two = \bigoplus_{i=0}^1 \unit$ and
+$\three = \bigoplus_{i=0}^2 \unit$ be standard grids of length 1, 2, and 3
+respectively. The array of type $\one \to P$ that assigns the value `42' to the
+single element of $\one$ is written \verb|[42]|. The array of type $\two \to P$
+that assigns the value `10' to the first element of $\two$ and `20' to the
+second element is written \verb|[10 20]|. Similarly, \verb|[10 20 30]| is an
+array of type $\three \to P$. 
+
+The kinds of arrays found in Remora are a subclass of what we are calling arrays
+here. A rank 1 Remora array is a map \(\mathbf{n}\to P\) for some standard grid,
+\(\mathbf{n}\). A rank 2 Remora array is a map from a standard grid,
+\(\mathbf{m}\), to a rank 1 Remora array; and so on. Thus the type of a Remora
+array is always specified completely by the list of integers \(m, n, \dotsc\).
+
+Remora arrays are clearly arrays but the converse is not necessarily
+true. Consider the map \(\mathbf{3}\to P\) whose values on the elements of
+\(\mathbf{3}\) are 10, 20, and 30, in that order. This is a rank 1 Remora array,
+\verb|[10 20 30]|. Likewise, consider the array \verb|[40 50]|, which is a map
+\(\mathbf{2}\to P\). What can we say about some map \(\mathbf{3}\oplus\mathbf{2}\to P\)?
+By our definition, that is an array; it is equivalent to a pair of maps, one of
+type \(\mathbf{3}\to P\) and one of type \(\mathbf{2}\to P\). We might write an
+example of this type as \texttt{[[10 20 30] [40 50]]}.\footnote{We don't write
+it like this, but we might.} But this is not a Remora array: a Remora array
+can't contain arrays of different length.
+
+It is true that \(\mathbf{3}\oplus\mathbf{2}\) is isomorphic to \(\mathbf{5}\).
+Remora has an \emph{append} function, so that, for example \texttt{(append [10
+    20 30] [40 50])} is valid Remora and evaluates to \texttt{[10 20 30 40 50]}.
+But isomorphism (in the sense we defined it above) is not identity.
+
+This is why the direct sum is defined for $n$ factors for each $n$. In our model
+there is a difference between, say, $\mathbf{3} = \bigoplus_3 \unit$ and $\unit
+\oplus (\unit \oplus \unit)$.
+
+
+
+\subsection{Direct products of grids}
+
+In Remora, arrays have a rank. A rank 1 array is a vector of values; a rank 2
+array is a vector of rank 1 arrays of the same length; and so on.  For example
+\verb|[[1 2] [10 20] [100 20]]| is a rank 2 array. It is a vector (of length
+three) of rank 1 arrays (of length 2). In our language, it is a map from $\three$
+to arrays of type $\two \to P$. So the overall type of this array is $\three \to
+(\two \to P)$.
+
+We often imagine that this array is actually based on a `rectangular' grid, of
+size $3 \times 2 = 6$. Let $\gr{G}$ and $\gr{H}$ be grids. The \emph{direct product},
+$\gr{G}\otimes\gr{H}$, is a grid such that
+\begin{enumerate}
+\item The set $\gr{G}\otimes\gr{H}$ is the Cartesian product $\gr{G} \times \gr{H}$;
+ \emph{i.e.}, the set of pairs $(g, h)$ where $g\in\gr{G}$ and $h\in\gr{H}$;
+\item $(g, h) < (g', h')$ iff either $g < g'$ or $g = g'$ and $h < h'$. 
+\end{enumerate}
+
+%% OLD: When we did tuple products
+%%
+%% Let \((\GG_1, \GG_2, \dots, \GG_N)\) be a tuple of grids as before. The
+%% \emph{direct product}, \(\bigotimes_i \GG_i\), is a grid such that
+%% \begin{enumerate}
+%% \item The set \(\bigotimes_i \GG_i\) is the Cartesian product of the \(\GG_i\);
+%%   \emph{i.e.}, the set of tuples \((g_1, g_2, \dotsc, g_N)\) where
+%%   \(g_i\in\GG_i\);
+%% \item \((g_1, g_2, \dotsc, g_N) < (h_1, h_2, \dotsc, h_N)\) iff there is some
+%%   \(k\in\{1, \dotsc, N\}\) such that (i) \(g_i = h_i\) for all \(i<k\); and (ii)
+%%   \(g_k<h_k\).
+%% \end{enumerate}
+
+That is, the direct product is the Cartesian product with `dictionary order' on
+the elements. The empty product is $\unit$.\footnote{Or, rather, I think that we
+choose the distinguished unit grid $\unit$ to be the empty product.}
+Furthermore, $\GG\otimes\void = \void$ (although I'm a little confused about whether
+that's an `$=$' or a `$\sim$').
+
+For any \(X\), a map $\gr{G}\otimes\gr{H} \to X\) is equivalent to a map $\gr{G} \to
+(\gr{H} \to X)$. Thus, in the example, an array of type $\three \to (\two \to P)$ can
+also be termed an array of type $\three \otimes \two \to P$.  
+
+In Cell, no distinction is made between equivalent \emph{arrays} of this kind
+and the right-associative map is taken to be canonical. (Note: this equivalence
+seems to underlie the rank polymorphism inherent in array languages, but I am
+not quite sure how to say this clearly.) Because of the canonical asociativity,
+only the binary product is defined: there aren't $n$-ary products as there were
+in the direct sum case.
+
+A grid in Cell is either \(\void\), \(\unit\), $\mathbf{n}\sim \bigoplus_n \unit$,
+or a direct sum or a direct product.
+
+%% a x (b + c)
+%% well, a x (b + c) -> A
+%% is a -> (b+c) -> A
+%% is a -> (b->A, c->A)
+%% is (a->b->A, a->c->A)
+%% is (a x b -> A, a x c -> A)
+%% is (a x b + a x c) -> A
+%% (a + b) x c
+%% well, (a + b) x c -> A
+%% is (a+b) -> c -> A
+%% is (a -> c -> A, b -> c -> A)
+%% is (a x c -> A, b x c -> A)
+%% is (a x c + b x c) -> A
+
+\subsection{Notation}
+
+In Remora, a rank 2 array is a vector of rank 1 arrays. For example, the array
+\verb|[[10 20 30] [100 200 300]]| is a map from $\two$ to arrays of type $\three
+\to P$; we might write its type as $\two \to \three \to P$ (where the maps associate
+to the right).
+
+But how should we write an array that is a map $\three\oplus\three \to P$? It has the
+same number of elements (namely, six) and a similar structure (a `pair of length
+three vectors of $P$') but it is a different array because the underlying grids
+are different. We write it has follows: \verb|{[10 20 30] [100 200 300]}|. The
+braces distinguish the ``direct sum of two parts'' from ``a map from $\two$ to
+the same parts.''
+
+In this way, we can also write the array \verb|{[10 20] [100 200 300]}|, which
+has type $\two\oplus\three \to P$, a type that does not exist in Remora. In Remora, the
+list of components between matching pairs of square brackets must all be of the
+same type and the interpretation is that the array is a map from a
+\emph{standard} grid (to some array).
+
+There is one wrinkle. We could also have written, say, \verb|[1 2 3]| as
+\verb|{1 2 3}|, but it is convenient to have the convention that an array of
+values whose grids is a direct sum of $\unit$ is written with square brackets. 
+
+In summary, given arrays $\alpha : \gr{A}\to P$, $\beta : \gr{B}\to P$, and $\gamma : \gr{C}\to P$
+the notation \texttt{\{$\alpha$ $\beta$ $\gamma$\}} means an array of type $\bigoplus
+\{\gr{A}, \gr{B}, \gr{C}\}$. In the particular case that $\gr{A} = \gr{B} =
+\gr{C}$ the notation \texttt{[$\alpha$ $\beta$ $\gamma$]} means an array of type $\three\to
+(\gr{A}\to P)$.
+
+
+
+\subsection{Further examples of direct sums}
+
+In this section we describe examples of direct sums of grids and arrays built on
+them. We write an array of type $\unit\to P$ as a `bare value,' such as
+\verb|42|.
+
+An array of type $\three \to P$ is conceptually a tree (see Figure~\ref{fig:gridthree}).
+\begin{figure}[ht]
+  \includegraphics[scale=0.7]{diags/grids.gv.pdf}
+  \caption{The array \texttt{[10 20 30]}.}\label{fig:gridthree}
+\end{figure}
+Notice that the sum has three children because the direct sum in this case is a sum of
+three arguments. By contrast, the array \verb|{10 [20 30]}| is represented as
+shown in Figure~\ref{fig:gridsum}.
+\begin{figure}[ht]
+  \includegraphics[scale=0.7]{diags/grids.gv.2.pdf}
+  \caption{The array \texttt{\{10 [20 30]\}}.}\label{fig:gridsum}
+\end{figure}
+Finally, note that the array \verb|[10]| is represented as a node with a single
+child, as in Figure~\ref{fig:gridsingleton}, and not as a bare value (which
+would simply be \verb|10|).
+\begin{figure}[ht]
+  \includegraphics[scale=0.7]{diags/grids.gv.3.pdf}
+  \caption{The array \texttt{[10]}.}\label{fig:gridsingleton}
+\end{figure}
+
+
+\section{Expressions}
+
+The kinds of arrays that are passed to Grid are not simply arrays of values,
+just as an Excel spreadsheet is not simply a table of numbers. Instead, a
+spreadsheet is able to express certain simple computations. So we need some way
+to represent expressions as arrays.
+
+To begin with, we assume that the set of primitives, $P$, is the disjoint union,
+$F \uplus V$, of a set, $F$, of \emph{primitive functions} and a set, $V$, of
+\emph{values}. A \emph{value array} is an array whose codomain is~$V$. In other
+words, a value array is `an array, all of whose elements are values.' Likewise,
+a \emph{function array} is an array whose codomain is~$F$.
+
+With each primitive function there is associated a grid, known as the
+\emph{signature} of the function. A primitive function, $f_0$, having signature
+$\gr{S}$, is a first-order function from arrays to values, $f_0: (\gr{S} \to V) \to
+V$. It maps arrays equivalent to $\gr{S}\to V$ to values. (By convention,
+primitive functions have a subscript~0.) For example, the signature of primitive
+binary addition is $\mathbf{2}$:
+\begin{equation*}
++_0: (\mathbf{2} \to V) \to V.
+\end{equation*}
+Note that $V$ is a rank zero array, which is the same as a map from the empty
+product to $V$. But the empty product is $\unit$, so $V$ is equivalent to
+$\unit\to V$. Hence we might equivalently write:
+\begin{equation*}
++_0: (\mathbf{2} \to V) \to (\unit \to V).
+\end{equation*}
+
+For most primitive functions one might think of, the signature is in fact a
+standard grid: usually $\one$, $\two$, or sometimes $\three$. That is, there are
+no functions which operate on ranges and in particular no `array functions.'
+Perhaps the only exceptions are \texttt{INDEX()} and \texttt{MATCH()}. For this
+version, we assume that all signatures are standard grids.
+
+An \emph{simple application array} is an array $A$ of type (strictly, isomorphic
+to the type) $\unit \oplus \gr{G} \to P$, where $A$ decomposes as $(\unit\to F, \GG \to
+V)$. That is, it is a pair of a primitive function and an array of values. The
+interpretation here is that the values are the arguments to the function. 
+
+
+
+For example, consider the case where $\alpha = P$. Then the array has type
+$\gr{a}\oplus\gr{G} \to P$. The intent is that the $\gr{a}$ component should be a
+primitive function (\emph{i.e.}, a function array with but one function) and the
+$\gr{G}$ component should be a value array. If the array is of that form and, in
+addition, $\gr{G}$ is the signature of the primitive function, then we say that
+the array is \emph{well-formed}. The interpretation of a well-formed array is
+that it represents the application of a primitive function to an argument.
+
+
+
+Notes: In Excel, absolute vs. relative references are distinguished by whether
+the frame/cell things is happening.
+
+
+
+
+
+An \emph{expression array} is either a value array or a well-formed application
+array.
+
+Notes:
+
+Unit grid is not the same as the standard grid of length 1.
+Units (``dot'') get absorbed in products
+Now have to figure out array extension in grid
+
+                                                                                                   
+
+
+
+%% An \emph{application array} is an array $\mathgr{A}\to\dotsm\to P$ such that
+%% \begin{enumerate}
+%% \item $\mathgr{A} = \unit \oplus \mathbf{n}$ for some~$\mathbf{n}$; and
+%% \item 
+%% \end{enumerate}
+
+
+
+
+\section{OLD: Being re-thought.}
+\label{sec:org0f361a3}
+
+
+A \emph{vector} is a map \(v : \GG\to S\) for some grid \(\GG\). We say that \(v\) is of
+type ‘vector over \(\GG\),’ written and write this type as \(S^\GG\). By such a map,
+we mean an assignment of a scalar to every value of type \(\GG\). So, for example,
+supposing \(\GG = (\unit\oplus\unit) \oplus \unit\), there are three values of
+type \(\GG\), not two; even though this particular \(\GG\) is a binary
+sum. Equivalently, a map \((\unit\oplus\unit) \oplus \unit\to S\) is a pair of
+maps: one \(\unit\oplus\unit\to S\) and one \(\unit\to S\). The former is of course
+itself a pair of maps.
+
+The idea here is that sum-type grids are the index types for vectors. Normally,
+one introduces only a binary sum and then sums of greater numbers of types are
+made up of repeated binary sums. However, we want vectors like \texttt{[10 20 30]}, and
+we don't want to think of this as either \texttt{[10 [20 30]]} or \texttt{[ [10 20] 30]}.  So
+there's a sense in which the kind of vectors we want are ‘associative.’ On the
+other hand, we would \emph{also} like ‘vectors’ like \texttt{[10 [20 30]]}. An ‘associative
+vector’ is a map, say, \(\bigoplus(\unit, \unit, \unit)\to S\), whereas the
+previous example is a map \(\unit\oplus (\unit\oplus \unit)\to S\).
+
+\subsubsection{Lifting functions to arrays}
+\label{sec:orgc0391ab}
+
+Let \(\GG\) be a grid and \(\alpha:\GG\to S\) a vector. Suppose \(f:S\to S\) is some
+unary function on scalars. Then we can ‘lift’ \(f\) to a function on vectors by
+function composition: \(f(\alpha) = f\circ\alpha\).
+
+Suppose \(\alpha\) and \(\beta\) are vectors \(\GG\to S\). We obtain a function
+\(\alpha\otimes\beta : \GG\to S\times S\). Namely, for each \(\mathfrak{g}\in \GG\),
+form the pair \((\alpha(\mathfrak{g}), \beta(\mathfrak{g}))\). Thus, given a
+binary function \(h : S\times S\to S\), we can likewise lift this function to
+vectors by function composition: \(h(\alpha, \beta) = h\circ
+(\alpha\otimes\beta)\). This function is known as \emph{zip-with}.
+
+Suppose \(\alpha : \gr{G}\to S\) and \(\beta : \gr{H}\to S\) are vectors. We obtain
+a vector \((\alpha\oplus\beta) : \gr{G}\oplus\gr{H}\to S\). Namely, an element of
+\(\gr{G}\oplus\gr{H}\) is either an element of \(\gr{G}\) or an element of
+\(\gr{H}\). If the former, apply \(\alpha\); if the latter, apply \(\beta\). 
+
+An \emph{array} is a vector of the form \(\gr{G}\otimes\gr{H}\to S\). (TODO: Maybe it's
+a vector of the form \(\bigotimes_i \gr{G}_i\to S\)?) Note that by definition of
+\(\otimes\), the array \(\alpha\) is equivalent to a map with domain \(\gr{G}\) and
+range \(S^\gr{H}\). That is, an array is ‘a sequence of vectors all of the same
+shape.’
+
+Suppose \(f:S^\gr{H}\to X\) is function that takes vectors over \(\gr{H}\) to
+some \(X\) (which we leave open for now). Given an array \(\alpha : \gr{G}\otimes
+\gr{H}\to S\), that is, a map \(\alpha : \gr{G}\to S^\gr{H}\), we lift \(f\) to
+such arrays, again by function composition.
+
+What kind of thing could \(X\) be? One obvious possibility is \(S\): for example, if
+the function is ‘sum.’ But it could also be some other vector: for example, if
+the function computes the prefix sums. 
+
+\subsubsection{Reductions and folds}
+\label{sec:org1f2a8ac}
+
+A  \emph{first-order  function}  is  one  whose  domain  and  range  are  scalars  or
+vectors. (TODO: Probably an element of \(S\)  counts as a vector?) The above shows
+how, given first-order functions on  scalars, one can make first-order functions
+on vectors which don't change the underlying grid. (Note that mapping produces a
+vector of the same `shape' as the input.)
+
+Every grid is either a sum or a product. So the question reduces to the
+operations that one might imagine on sums or products. 
+
+Suppose \(\gr{G} = \bigoplus_{i = 1}^N \gr{G}_i\) is a sum. If \(f\) is an \(N\)-ary
+function, whose \(i\)th argument is a vector over \(\gr{G}_i\), then we can apply
+\(f\) immediately to a vector over \(\gr{G}\).
+
+Consider the particular case where \(f\) is a binary, associative operator -- that
+is \(f(f(x, y), z) = f(x, f(y, z))\) and both arguments of \(f\) are of the same
+type. In this case we can apply \(f\) to any \emph{array} whose ‘elements have the
+appropriate type.’ That operation is called \emph{reduce}.
+
+On the other hand, if \(f\) is a binary operator, not necessarily associative,
+then we can apply it recursively to a ‘list of pairs’ type. This operation is
+\emph{fold}.
+
+(Note: Are we asserting that \emph{all} operations on sum types must be associative?)
+
+TODO: \emph{scan} and \emph{trace}. 
+
+TODO: \emph{replicate}
+
+\subsubsection{Transposition}
+\label{sec:org68e418b}
+
+\(\gr{G}\otimes\gr{H}\) is clearly not the same grid as
+\(\gr{H}\otimes\gr{G}\). However, there is clearly a correspondence between a
+vector \(\gr{G}\otimes\gr{H}\to S\) and a vector \(\gr{H}\otimes\gr{G}\to
+S\); namely, given a pair \((\gr{h}, \gr{g})\), reverse the order and apply the
+given vector. This operation is called \emph{transposition}. 
+
+\subsection{The nature of polymorphism}
+\label{sec:orgd61f222}
+
+The polymorphism so far -- ‘rank polymorphism’ -- is all that which arises from
+function composition. If I have a function \(f:B\to X\), then, for any function
+\(A\to B\) I get a function \(A\to X\). It's sort of ‘polymorphic in \(A\)’:
+
+$$
+\forall A, (f\circ) : (A\to B)\to (A\to X)
+$$
+
+Reduction is similar but changes the structure. It applies to a map from any
+sum-type to a particular type and returns a value of that particular type. Eg,
+\texttt{(reduce +)} applies to any \(A\to\R\), producing an \(\R\), because
+\(+:\R\times\R\to\R\):
+
+$$
+\forall A, (\operatorname{reduce}\, +) : (A \to \R)\to \R.
+$$
+
+However, there is some ambiguity. 
+
+Suppose \(\gr{A}\) and \(\gr{B}\) are grids, and \(\alpha : \gr{A}\otimes\gr{B}\to\R\)
+is an array. The domain of \(\alpha\) is not a sum type, so we can't reduce
+directly. Here are three ways we might interpret the application of reduction. 
+
+\begin{enumerate}
+\item We might interpret \(\gr{A}\otimes\gr{B}\) as 
+
+$$
+   \gr{A}\otimes\gr{B} \sim \bigoplus_{\gr{A}, \gr{B}} \unit  
+   $$
+
+and then apply reduce. In other words “sum over all elements of the
+two-dimensional array.” My sense is that this is not the typical
+interpretation; perhaps because the same outcome can be achieved by doing the
+next two things in sucession.
+
+\item We might interpret the type of \(\alpha\) as
+
+$$
+   \gr{A}\otimes\gr{B}\to\R \sim \gr{A} \to (\gr{B}\to \R),
+   $$
+
+instantiate \((\reduce +)\) at \(\gr{B}\to\R\), and apply function
+composition. In other words, we reduce “each of the inner vectors of
+\(\alpha\),” leaving a vector over the same grid as \(\alpha\).
+
+I think this is the default for reduction, corresponding to “find the cell
+and map over the frame” approach of Remora.
+
+\item Finally, we might “lift” \(+\) from \(\R\times \R\) to \(X\otimes X\), where \(X =
+   \gr{B}\to\R\) by using \(\zipWith\). Now we can instantiate the reduction at
+\(\gr{A}\to X\)
+\end{enumerate}
+
+The last approach is often explained by using transposition, but there was no
+transposition here. Is there an identity, perhaps? Something along the lines of:
+
+$$
+(\reduce +) \circ \operatorname{transpose} = (\reduce (\zipWith +)) ? 
+$$
+
+\section{Using arrays to represent first-order expressions}
+\label{sec:orgac340af}
+
+A \emph{first-order array function} is a grid, \(\gr{G}\), and a map \(f: (\gr{G}\to
+S)\to S\). That is, it's a map from arrays over a certain grid to scalars. 
+
+For example, \(\operatorname{add}_2 : (\mathbf{2}\to S)\to S\) is a first-order
+array function which acts on vectors of length 2 (by adding up their values):
+$$
+\operatorname{add}_2([10\; 20]) = 30.
+$$ 
+Notice that the value is a scalar, not an array of length 1.
+
+We assume here that first-order array functions are simply given as set \(B\) of
+built-ins.  (In reality, one constructs them from functions on scalars applied
+to values at particular grid indices.) We enlarge \(S\) (the scalars) by the set
+of built-ins: \(S^* = S\cup B\).
+
+TODO: \((\reduce +)\) at \(\mathbf{4}\) (say) is also a first-order array function.  
+
+We assume the existence of a grid \(\gr{F}\sim\unit\). An \emph{array expression} is
+either:
+\begin{itemize}
+\item an array of \(S\); or
+\item an array of type \(\gr{F}\oplus\gr{G}\to S^*\); where the first element
+\(\gr{F}\to B\) is a first-order array function of type \(\gr{G}\to S\); or
+\item an array of type \(\gr{F}\oplus\gr{G}\to X\) where \(X\) is an array expression.
+\end{itemize}
+
+Array expressions are \emph{evaluated} to produce arrays. The value of an array of
+\(S\) is just that array. The value of an expression whose first element is a
+first-order function is obtained by evaluating the remainder and then applying
+that first-order function.
+
+\section{Possible Racket-y syntax version}
+\label{sec:orga1852e4}
+
+
+\section{References}
+\label{sec:orgbf56ab8}
+
+\label{org334ac2d}
+\bibliographystyle{unsrt}
+
+\label{orgefbceba}
+\bibliography{nocell}
+\end{document}

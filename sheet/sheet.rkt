@@ -6,9 +6,9 @@
 
 #| 
 
-Grid is "assembly language for spreadsheets". 
+Sheet is "assembly language for spreadsheets". 
 
-This module exports structure definitions which define a Grid programme
+This module exports structure definitions which define a Sheet spreadsheet
 
 |#
 
@@ -27,16 +27,16 @@ This module exports structure definitions which define a Grid programme
  builtin?)
 
 
-;; --- Programs, sheets, and cells
+;; --- Spreadsheet, sheets, and cells
 
-(struct program (sheets) #:transparent)
+(struct spreadsheet (sheets) #:transparent)
 (struct sheet (rows) #:transparent)
 (struct cell (xpr attrs) #:transparent)
 (struct labelled-cell cell (lbl) #:transparent)
 
 (provide
  (contract-out
-  (struct program
+  (struct spreadsheet
     ([sheets (listof sheet?)]))
   (struct sheet
     ([rows (listof (listof cell?))]))

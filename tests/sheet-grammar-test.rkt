@@ -2,17 +2,17 @@
 
 #|
 
-Tests to exercise the grammar of Grid
+Tests to exercise the grammar of sheet
 
 TODO:
  - trickier expressions
- - cells, sheets, and programs
+ - cells, sheets, and spreadsheets
  - styles
  - maybe builtins with known arities
 |#
 
 
-(require "../grid/grid.rkt")
+(require "../sheet/sheet.rkt")
 
 (module+ test
   (require rackunit)
@@ -21,7 +21,7 @@ TODO:
     (list 42.0 "foo" #t #f 'error:arg 'error:val 'error:undef 'nothing))
 
   (test-case
-      "Grid atomic values"
+      "sheet atomic values"
     (for ([v avs])
       (check-pred atomic-value? v)))
  
@@ -35,7 +35,7 @@ TODO:
           (range-reference (absolute-location "the-cell")
                            (relative-location "the-cell-src" "the-cell-tgt"))))
   (test-case
-      "Grid values"
+      "sheet values"
     ;; Matrices are values
     (check-pred value? M)
     (check-equal? (matrix-ref M 1 0) 2.0)
@@ -46,7 +46,7 @@ TODO:
       (check-pred expression? r)))
 
   (test-case
-      "Grid expressions"
+      "sheet expressions"
     (check-pred expression? 1)
     (check-pred expression? (application '+ '(1 2)))
     

@@ -1,6 +1,6 @@
 #lang racket
 
-;; A racket program that emits the team's monthly project-person
+;; A racket spreadsheet that emits the team's monthly project-person
 ;; allocation report for Finance.
 
 ;; https://github.com/alan-turing-institute/nocell/issues/49
@@ -16,8 +16,9 @@
          whatnow/schedule
          racket/hash
          rackunit
-         "../grid/grid.rkt"
-         "../ods/ods.rkt")
+         "../sheet/sheet.rkt"
+         "../sheet/ods/ods.rkt")
+
 
 ;; ----------------------------------------
 ;; Utility
@@ -177,11 +178,11 @@
 ;;                                                  (hash/c number? string?))
 (define (schedule-id-name-mappings whatnow-schedule)
   (match-let*
-      ([(schedule people projects programmes assignments) whatnow-schedule]
+      ([(schedule people projects spreadsheetmes assignments) whatnow-schedule]
        ;; client-id to client name
        ;; : (hash/c number? string?)
        [client-id=>name
-        (for/hash ([p programmes]) (values (client-id p) (client-name p)))])
+        (for/hash ([p spreadsheetmes]) (values (client-id p) (client-name p)))])
 
     (values
      ;; - person-id to full name
@@ -251,11 +252,11 @@
 
 
 ;; ----------------------------------------
-;; Output to a nocell grid program
+;; Output to a nocell sheet spreadsheet
 
-;; allocations->grid : (listof allocation?) (listof gregor:date?) -> program?
-(define (allocations->grid allocations dates)
-  (program
+;; allocations->sheet : (listof allocation?) (listof gregor:date?) -> spreadsheet?
+(define (allocations->sheet allocations dates)
+  (spreadsheet
    (list
     (sheet
      (list*
@@ -289,7 +290,7 @@
 ;; make-report-ods : (listof allocation?) (listof gregor:date?) -> bytes?
 (define (make-report-ods allocations dates)
   (sxml->ods
-   (grid-program->sxml (allocations->grid allocations dates)
+   (sheet-spreadsheet->sxml (allocations->sheet allocations dates)
                        #:blank-rows-before '(1)
                        #:blank-cols-before '(1))
    #:type 'ods))

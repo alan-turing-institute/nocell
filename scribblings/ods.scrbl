@@ -2,16 +2,16 @@
 
 @title[#:tag "ods"]{Grid-to-Ods Backend}
 
-@(require (@for-label nocell/ods/ods nocell/grid/grid sxml racket/system racket/file
+@(require (@for-label nocell/sheet/ods/ods nocell/sheet/sheet sxml racket/system racket/file
             @except-in[racket/base date? date date-month date-day date-year struct:date]))
 
-@defmodule[nocell/ods/ods]{The @racketmodname[nocell/ods/ods] library
-provides utilities to create spreadsheet files from a @exec{grid} @racket[program].
+@defmodule[nocell/sheet/ods/ods]{The @racketmodname[nocell/sheet/ods/ods] library
+provides utilities to create spreadsheet files from a @exec{sheet} @racket[spreadsheet].
 Currently the library supports @bold{fods} (opens in LibreOffice) and @bold{ods}
 format (opens in both LibreOffice and Excel).
 Conversion of sexp to xml is implemented by @link["https://docs.racket-lang.org/sxml/index.html?q=sxml"]{sxml}.}
 
-@defproc[(sxml->ods [sxml-program sxml-program?]
+@defproc[(sxml->ods [sxml-spreadsheet sxml-spreadsheet?]
                     [#:type type (or/c 'fods 'ods)])
                   bytes?]
 
@@ -31,10 +31,10 @@ file format.  If @italic{type} is @racket['ods], produces an
  @exec{WARNING:} @racket[system] zip is used because @racketmodname[file/zip] does not support
  leaving the first file in the archive uncompressed.
 
-@defproc[(grid-program->sxml [program program?])
-                  sxml-program?]
+@defproc[(sheet-spreadsheet->sxml [spreadsheet spreadsheet?])
+                  sxml-spreadsheet?]
 
-Translates a @racketmodname[nocell/grid/grid] program into @link["https://docs.racket-lang.org/sxml/SXML.html?q=sxml"]{SXML}.
+Translates a @racketmodname[nocell/sheet/sheet] spreadsheet into @link["https://docs.racket-lang.org/sxml/SXML.html?q=sxml"]{SXML}.
 
 @defproc[(bytes->file [bstr bytes?] [fn string?])
                   exact-nonnegative-integer?]
