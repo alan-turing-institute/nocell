@@ -14,8 +14,11 @@
                     [date? gregor:date?])
          whatnow/forecast
          whatnow/schedule
+         racket/hash
+         rackunit
          "../sheet/sheet.rkt"
          "../sheet/ods/ods.rkt")
+
 
 ;; ----------------------------------------
 ;; Utility
@@ -140,8 +143,25 @@
 ;; A list of the months comprising the given financial year
 ;;
 ;; fy-months : exact-integer? -> (listof gregor:date?)
-(define (fy-months y) (map (curry +months (gregor:date 2020 03)) (range 12)))
+(define (fy-months y) (map (curry +months (gregor:date 2020 04)) (range 12)))
 
+;; Return the first day (Monday) of the iso-week to which the given
+;; date d belongs
+(define (iso-week-start d)
+  (let* ([wday (->iso-wday d)]
+         [monday-before-date (-days d (sub1 wday))])
+    (if (<= wday 4) ; Thursday
+        monday-before-date
+        (+days monday-before-date 7))))
+
+(module+ test
+  (check-equal? (iso-week-start (gregor:date 2021 04))
+                (gregor:date 2021 03 29))
+
+  (check-equal? (iso-week-start (gregor:date 2021 05))
+                (gregor:date 2021 05 03))
+  ;;
+  )
 
 ;; ----------------------------------------
 ;; Retreive data from Forecast via whatnow, returned as 'allocation' objects
@@ -188,7 +208,7 @@
 ;; assignment-fte-in-month : assignment? gregor:date? -> inexact-real?
 (define (assignment-fte-in-month a m)
   (let (;; the input month, as an interval
-        [m* (date-interval m (+months m 1))]
+        [m* (date-interval (iso-week-start m) (iso-week-start (+months m 1)))]
         ;; the assigment date range as an interval 
         [a* (date-interval (assignment-start-date a)
                            ;; Forecast assignments include their end date
@@ -254,7 +274,7 @@
                                                      "REG Service Areas"
                                                      "Trac days"
                                                      "Turing Programme Support"
-                                                     "Turing Service Areas"
+                                                     ;; "Turing Service Areas"
                                                      "UNAVAILABLE"))
                      (andmap zero? (hash-values (allocation-month-fraction a)))))
 
@@ -273,17 +293,38 @@
    (sheet-spreadsheet->sxml (allocations->sheet allocations dates)
                        #:blank-rows-before '(1)
                        #:blank-cols-before '(1))
-   #:type 'fods))
+   #:type 'ods))
 
 
 ;; ----------------------------------------
 ;; Examples
 
-(bytes->file (make-report-ods example-allocations (fy-months 2020))
-             "example-report-to-finance.fods")
+;; (bytes->file (make-report-ods example-allocations (fy-months 2020))
+;;              "example-report-to-finance.fods")
 
-;; (let ([months (fy-months 2020)]
-;;       [forecast-schedule (get-the-schedule)])
-;;   (bytes->file
-;;    (make-report-ods (schedule->allocations forecast-schedule months) months)
-;;    "example-report-to-finance.fods"))
+(let* ([months (map (curry +months (gregor:date 2021 04)) (range 12))]
+
+       [allocations
+        (for/fold ([allocations null])
+                  ([month (in-list months)])
+          (let* ([iso-month-end (-days (iso-week-start (+months month 1)) 1)]
+                 [forecast-schedule (get-the-schedule (iso-week-start month) iso-month-end)])
+            (append allocations
+                    (schedule->allocations forecast-schedule (list month)))))]
+
+       [allocations-grouped
+        (group-by (λ (a) (list (allocation-client a)
+                               (allocation-person a)
+                               (allocation-project a)))
+                  allocations)]
+
+       [allocations-combined
+        (map (λ (as)
+               (struct-copy allocation
+                            (car as)
+                            [month-fraction
+                             (apply hash-union (map allocation-month-fraction as))]))
+             allocations-grouped)])
+
+  (bytes->file (make-report-ods allocations-combined months)
+               "example-report-to-finance.ods"))
