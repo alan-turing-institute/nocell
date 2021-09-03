@@ -4,7 +4,7 @@
                "rackunit-lib"
                "sxml"
                "gregor"
-               "https://github.com/alan-turing-institute/whatnow.git#main"
+               "https://github.com/alan-turing-institute/whatnow.git#fix-assignment-request"
                "basedir" ; for whatnow
                ))
 (define pkg-desc "A language for building probabilistic spreadsheets")
