@@ -5,7 +5,8 @@
          pict
          racket/format
          racket/class
-         racket/function)
+         racket/function
+         racket/string)
 
 
 #|
@@ -15,9 +16,41 @@ Saves an expression tree from a (quote s-expression?)
 |#
 
 
+;; --------------------------------------------------------------------------------------------------
+;;  INTERFACE
 
 
+(provide tree->diag)
 
+;; --------------------------------------------------------------------------------------------------
+;; Tree Traversal
+
+;;tree->diag: pair? -> tree-layout?
+(define (tree->diag x)
+  (naive-layered (traverse-tree x)))
+
+
+;;traverse-tree: datum? -> tree-layout? 
+(define (traverse-tree x)
+  (cond
+    [(null? x) #f]
+    [(integer? x) (make-node x)]
+    [(pair? x)
+     (cond
+       [(application? x)
+        (apply (curry tree-layout #:pict (app (car x)))
+               (map traverse-tree (cdr x)))]
+       [else
+        (apply (curry tree-layout #:pict plus)
+            (map traverse-tree x))])]))
+
+(define (application? l)
+  (cond
+    [(pair? l) (symbol? (car l))]
+    [else #f]))
+
+;; --------------------------------------------------------------------------------------------------
+;; Picture constructors
 
 (define white-circle (colorize
                       (disk 25 #:draw-border? #t
@@ -28,30 +61,14 @@ Saves an expression tree from a (quote s-expression?)
                (disk 15) "white")
               (text "⊕" null 20)))
 
+(define (app x) (cc-superimpose
+              white-circle
+              (text (~a x) null 10)))
+
 (define (make-node sexp)
   (tree-layout #:pict (cc-superimpose
                        white-circle
                        (text (~a sexp)))))
-
-
-;;traverse-tree: datum? -> tree-layout? 
-(define (traverse-tree sexp)
-  (cond
-    [(null? sexp) #f]
-    [(integer? sexp) (make-node sexp)]
-    
-    [(pair? sexp)
-     (apply (curry tree-layout #:pict plus)
-            (map traverse-tree sexp))]))
-
-(define (make-tree sexp)
-  (naive-layered (traverse-tree sexp)))
-
-
-
-(define (save-pict the-pict name kind)
-  (define bm (pict->bitmap the-pict))
-  (send bm save-file name kind))
 
 
 (define (add-letter the-pict letter)
@@ -60,28 +77,41 @@ Saves an expression tree from a (quote s-expression?)
    the-pict))
 
 
-(make-tree '(10 20 30))
-(save-pict (make-tree '(10 20 30)) "tree1.png" 'png)
-
-(make-tree '(10 (20 30)))
-(save-pict (make-tree '(10 (20 30))) "tree2.png" 'png)
-
-(make-tree '(10 (20 (30 40))))
-(save-pict (make-tree '(10 (20 (30 40)))) "tree3.png" 'png)
-
-(make-tree '((10 20) (30 (40 50))))
-(save-pict (make-tree '((10 20) (30 (40 50)))) "tree4.png" 'png)
-
-(make-tree '((5 (10 20)) (30 (40 50))))
-(save-pict (make-tree '((5 (10 20)) (30 (40 50)))) "tree5.png" 'png)
-
-
-(make-tree '((5 (10 20)) (30 (40 (50 60))) (70 80)))
-(save-pict (make-tree '((5 (10 20)) (30 (40 (50 60))) (70 80))) "tree6.png" 'png)
+(define (save-pict the-pict name kind)
+  (define bm (pict->bitmap the-pict))
+  (send bm save-file name kind))
 
 
 
+;; --------------------------------------------------------------------------------------------------
+;; Examples
 
 
-
+(define examples
+  (list
+   '(10 20 30)
+   '(10 (20 30))
+   '(10 (20 (30 40)))
+   '((10 20) (30 (40 50)))
+   '((5 (10 20)) (30 (40 50)))
+   '((5 (10 20)) (30 (40 (50 60))) (70 80))
+   '(+ 1 2)
+   '(+ 1 [2 3])
+   '(+ 1 (* 2 3))
+   '(+ (* [1 2] [3 4]) (* [5 6] [7 8]))
+   '(app ((app 1 2) (app 3 4)) (4 5))
+   ))
+ 
+(for ([(eg i) (in-indexed examples)])
+  (let ([diag (tree->diag eg)])
+    (displayln (string-join (list
+                             "Ex "
+                             (~a i)
+                             ": "
+                             (~a eg))))
+    (println diag)
+    (save-pict diag (string-join (list
+                                  "tree"
+                                  (~a i)
+                                  ".png")) 'png)))
 
